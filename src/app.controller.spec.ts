@@ -1,0 +1,25 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { AppController } from './app.controller';
+import {StellarService} from "./stellar.service";
+
+describe('AppController', () => {
+  let appController: AppController;
+
+  beforeEach(async () => {
+    const app: TestingModule = await Test.createTestingModule({
+      controllers: [AppController],
+      providers: [StellarService],
+    }).compile();
+
+    appController = app.get<AppController>(AppController);
+  });
+
+  describe('root', () => {
+    it('should return "TODO"', () => {
+      expect(appController.getBalances()).toBe('TODO');
+    });
+    it('should return "TODO"', () => {
+      expect(appController.getRates()).toBe('TODO');
+    });
+  });
+});
