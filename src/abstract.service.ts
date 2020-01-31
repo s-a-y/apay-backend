@@ -1,20 +1,8 @@
 import { sprintf } from 'sprintf-js';
-import { OrderOption } from './app.enums';
 import { FindConditions, FindOneOptions, ObjectID, Repository, SelectQueryBuilder } from 'typeorm';
 import { BigNumber } from 'bignumber.js';
-
-enum EntityField {
-  cursor = 'cursor',
-}
-
-interface EntitiesOrder {
-  field: any;
-  order: OrderOption;
-}
-export interface GetEntitiesInputInterface {
-  first?: number;
-  order?: {field: any, order: any};
-}
+import {EntitiesOrder, GetEntitiesInputInterface} from "./app.interfaces";
+import {EntityField} from "./app.enums";
 
 export abstract class AbstractService<I extends GetEntitiesInputInterface, T, M> {
   protected  abstract entitiesRepository: Repository<T>;

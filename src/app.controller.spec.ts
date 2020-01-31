@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 import {StellarService} from "./stellar.service";
+import {GetRatesLogDto} from "./dto/get_rates_log.dto";
 
 describe('AppController', () => {
   let appController: AppController;
@@ -19,7 +20,7 @@ describe('AppController', () => {
       expect(appController.getBalances()).toBe('TODO');
     });
     it('should return "TODO"', () => {
-      expect(appController.getRates()).toBe('TODO');
+      expect(appController.getRates({} as GetRatesLogDto)).toBe('TODO');
     });
   });
 });
