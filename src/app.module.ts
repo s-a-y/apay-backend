@@ -22,6 +22,7 @@ import {RatesService} from "./rates.service";
       },
       inject: [ConfigService],
     }),
+    TypeOrmModule.forFeature([RatesLog]),
   ],
   controllers: [AppController],
   providers: [StellarService, RatesService],

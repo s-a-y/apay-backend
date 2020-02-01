@@ -4,6 +4,7 @@ import {HttpModule} from "@nestjs/common";
 import {ConfigModule, ConfigService} from "@nestjs/config";
 import configuration from "./config/configuration";
 import {TypeOrmModule} from "@nestjs/typeorm";
+import {RatesLog} from "./entities/rates_log.entity";
 
 describe('RatesService', () => {
   let ratesService: RatesService;
@@ -17,6 +18,7 @@ describe('RatesService', () => {
           useFactory: (config: ConfigService) => config.get('database'),
           inject: [ConfigService],
         }),
+        TypeOrmModule.forFeature([RatesLog]),
         HttpModule,
         ConfigModule.forRoot({
           isGlobal: true,

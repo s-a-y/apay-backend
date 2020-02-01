@@ -21,4 +21,16 @@ export class GetRatesLogDto implements GetEntitiesInputInterface {
   @IsDate()
   @Transform(value => new Date(value))
   toCreatedAt: Date;
+  @IsOptional()
+  @Transform(value => new Date(value))
+  @IsDate()
+  at: Date;
+  @IsOptional()
+  @IsDate()
+  @Transform(value => new Date(value))
+  fromAt: Date;
+  @IsOptional()
+  @IsDate()
+  @Transform(value => new Date(value))
+  toAt: Date;
 }

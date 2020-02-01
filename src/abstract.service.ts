@@ -19,7 +19,7 @@ export abstract class AbstractService<I extends GetEntitiesInputInterface, T, M>
 
     const totalCount = await builder.getCount();
 
-    const first = input.first;
+    const first = input.first || 20;
     input.first = first + 1;
     if (input.first) {
       builder.limit(input.first);
