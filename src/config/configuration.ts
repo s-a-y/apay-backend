@@ -13,5 +13,14 @@ export default () => ({
     migrationsRun: process.env.TYPEORM_MIGRATIONS_RUN === 'true',
     synchronize: (process.env.TYPEORM_SYNCHRONIZE || 'true') === 'true',
     extra: process.env.TYPEORM_SOCKET ? {host: process.env.TYPEORM_SOCKET} : null,
+  },
+  logger: {
+    level: process.env.LOG_LEVEL || 'info',
+  },
+  fluentd: {
+    enabled: process.env.FLUENTD_ENABLED || false,
+    host: process.env.FLUENTD_TAG_PREFIX || 'localhost',
+    port: +process.env.FLUENTD_PORT || 24224,
+    tagPrefix: process.env.FLUENTD_TAG_PREFIX || 'apay',
   }
 });

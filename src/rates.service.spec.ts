@@ -33,7 +33,7 @@ describe('RatesService', () => {
 
   describe('RatesService', () => {
     it('fetch', async () => {
-      expect(await ratesService.fetchRates()).toBe('TODO');
+      expect(await ratesService.fetchRateHistory(new Date('2019-12-20'))).toBe('TODO');
     });
   });
 });
