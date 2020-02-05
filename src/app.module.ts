@@ -6,6 +6,8 @@ import configuration from './config/configuration';
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {RatesLog} from "./entities/rates_log.entity";
 import {RatesService} from "./rates.service";
+import {RateHistoryService} from "./rate_history.service";
+import {RateHistory} from "./entities/rate_history.entity";
 
 @Module({
   imports: [
@@ -17,14 +19,14 @@ import {RatesService} from "./rates.service";
     TypeOrmModule.forRootAsync({
       useFactory: (config: ConfigService) => {
         const cfg = config.get('database');
-        cfg.entities = [RatesLog];
+        cfg.entities = [RatesLog, RateHistory];
         return cfg;
       },
       inject: [ConfigService],
     }),
-    TypeOrmModule.forFeature([RatesLog]),
+    TypeOrmModule.forFeature([RatesLog, RateHistory]),
   ],
   controllers: [AppController],
-  providers: [StellarService, RatesService],
+  providers: [StellarService, RatesService, RateHistoryService],
 })
 export class AppModule {}

@@ -5,20 +5,23 @@ import {ConfigModule, ConfigService} from "@nestjs/config";
 import configuration from "./config/configuration";
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {RatesLog} from "./entities/rates_log.entity";
+import {RateHistory} from "./entities/rate_history.entity";
+import {RateHistoryService} from "./rate_history.service";
 
 describe('RatesService', () => {
   let ratesService: RatesService;
+  let rateHistoryService: RateHistoryService;
   let configService: ConfigService;
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
-      providers: [RatesService, ConfigService],
+      providers: [RatesService, ConfigService, RateHistoryService],
       imports: [
         TypeOrmModule.forRootAsync({
           useFactory: (config: ConfigService) => config.get('database'),
           inject: [ConfigService],
         }),
-        TypeOrmModule.forFeature([RatesLog]),
+        TypeOrmModule.forFeature([RatesLog, RateHistory]),
         HttpModule,
         ConfigModule.forRoot({
           isGlobal: true,
@@ -28,12 +31,13 @@ describe('RatesService', () => {
     }).compile();
 
     ratesService = app.get<RatesService>(RatesService);
+    rateHistoryService = app.get<RateHistoryService>(RateHistoryService);
     configService = app.get<ConfigService>(ConfigService);
   });
 
   describe('RatesService', () => {
     it('fetch', async () => {
-      expect(await ratesService.fetchRateHistory(new Date('2019-12-20'))).toBe('TODO');
+      expect(await rateHistoryService.fetchRateHistory(new Date('2019-12-20'))).toBe('TODO');
     });
   });
 });

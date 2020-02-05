@@ -4,16 +4,13 @@ import {RatesLog} from "./entities/rates_log.entity";
 import {getRepository, Repository, SelectQueryBuilder} from "typeorm";
 import {AbstractService} from "./abstract.service";
 import {GetRatesLogDto} from "./dto/get_rates_log.dto";
-import {RateHistoryData, Rates, RatesContainer, RatesLogData} from "./app.interfaces";
+import {Rates, RatesItem} from "./app.interfaces";
 import {InjectRepository} from "@nestjs/typeorm";
-import {OrderOption, SupportedCurrency} from "./app.enums";
-import {RateHistory} from "./entities/rate_history.entity";
-import { from } from 'rxjs';
-import {flatMap, map, mergeMap, switchMap} from "rxjs/operators";
+import {OrderOption} from "./app.enums";
 import {MyLoggerService} from "./my-logger.service";
 
 @Injectable()
-export class RatesService extends AbstractService<GetRatesLogDto, RatesLog, RatesContainer> {
+export class RatesService extends AbstractService<GetRatesLogDto, RatesLog, RatesItem> {
   private readonly logger = new MyLoggerService(RatesService.name);
   constructor(
     private readonly http: HttpService,
@@ -27,8 +24,6 @@ export class RatesService extends AbstractService<GetRatesLogDto, RatesLog, Rate
   getItemsBuilder(input: GetRatesLogDto, repository?: Repository<RatesLog>): SelectQueryBuilder<any> {
     const builder = (repository || getRepository(RatesLog)).createQueryBuilder('rates_log').where('true');
     const order = input.order || {field: 'cursor', order: OrderOption.ASC};
-
-    console.log(input);
 
     builder.orderBy('rates_log.' + order.field, order.order);
 
@@ -85,7 +80,7 @@ export class RatesService extends AbstractService<GetRatesLogDto, RatesLog, Rate
       rates,
       fetchedAt: log.createdAt,
       at: log.data[0].timestamp
-    } as RatesContainer);
+    } as RatesItem);
   }
 
   async fetchRates() {
@@ -104,50 +99,6 @@ export class RatesService extends AbstractService<GetRatesLogDto, RatesLog, Rate
     return response.data;
   }
 
-  async fetchRateHistory(startDate: Date, endDate: Date = null) {
-    return from(Object.values(SupportedCurrency)).pipe(
-      mergeMap(currency => this.fetchCurrencyRateHistoryFromNomics(currency, startDate, endDate).pipe(map(response => ({currency, response})))),
-      flatMap(({currency, response}) => from(response.data.map(o => {o.currency = currency; return o}))),
-      flatMap((v: any) => from(this.insertCurrencyRateHistoryItem(v.currency, v).then(() => v.currency)))
-    ).subscribe(
-      (next) => {
-        console.log('HUI');
-        this.logger.log(`[${startDate} - ${endDate}]:${next}: Rates history updated`);
-      },
-      (error) => {
-        console.log('HUI 1');
-        this.logger.logError('Failed to fetch rates history')
-      },
-      () => {
-        console.log('HUI 2');
-        this.logger.log(`[${startDate} - ${endDate}]: Rates history updated for all currencies`);
-      }
-    );
-  }
-
-  private fetchCurrencyRateHistoryFromNomics(currency: SupportedCurrency, startDate: Date, endDate: Date = null) {
-    return this.http.get(
-      'https://api.nomics.com/v1/exchange-rates/history',
-      {
-        params: {
-          currency,
-          key: this.configService.get('nomicsApiKey'),
-          start: new Date(startDate.toDateString()),
-          end: endDate ? new Date(endDate.toDateString()) : null,
-        }
-      },
-    );
-  }
-
-  private async insertCurrencyRateHistoryItem(currency: SupportedCurrency, item: RateHistoryData) {
-    const object = new RateHistory();
-    object.at = new Date(item.timestamp);
-    object.rate = item.rate;
-    object.currency = currency;
-    this.logger.log(object);
-    return await this.saveRateHistory(object);
-  }
-
   private async insertRatesLog(rates) {
     const log = new RatesLog();
     log.at = new Date(rates[0].timestamp);
@@ -163,9 +114,5 @@ export class RatesService extends AbstractService<GetRatesLogDto, RatesLog, Rate
         v.atCursor = this.generateDateCursor(v.at, v.cursor);
         return (repository || this.entitiesRepository).save(v);
       });
-  }
-
-  saveRateHistory(history: RateHistory, repository: Repository<RatesLog> = null): Promise<RatesLog> {
-    return (repository || this.entitiesRepository).save(history);
   }
 }
