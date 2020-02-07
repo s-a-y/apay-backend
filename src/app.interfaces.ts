@@ -27,19 +27,13 @@ export interface RatesLogData {
 
 export interface RateHistoryData {
   rate: BigNumber;
-  timestamp: Date;
-}
-
-export interface RateHistoryItem {
-  rate: number;
-  at: Date;
-  fetchedAt
+  timestamp: string;
 }
 
 export interface RatesItem {
   rates: Rates,
   at: Date,
-  fetchedAt: Date,
+  createdAt: Date,
 }
 
 /**

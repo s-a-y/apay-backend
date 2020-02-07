@@ -78,7 +78,7 @@ export class RatesService extends AbstractService<GetRatesLogDto, RatesLog, Rate
     return Promise.resolve({
       id: log.id,
       rates,
-      fetchedAt: log.createdAt,
+      createdAt: log.createdAt,
       at: log.data[0].timestamp
     } as RatesItem);
   }

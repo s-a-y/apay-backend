@@ -112,8 +112,7 @@ export class RateHistoryService extends AbstractService<GetRateHistoryDto, RateH
   }
 
   private async insertCurrencyRateHistoryItem(currency: SupportedCurrency, item: RateHistoryData) {
-    const existingItem = await this.findOne({rate: item.rate, at: item.timestamp});
-    //console.log({currency, at: item.timestamp});
+    const existingItem = await this.findOne({currency, at: new Date(item.timestamp)});
     if (!existingItem) {
       const object = new RateHistory();
       object.at = new Date(item.timestamp);
@@ -124,7 +123,6 @@ export class RateHistoryService extends AbstractService<GetRateHistoryDto, RateH
           //console.log({currency: o.currency, at: o.at});
         });
     }
-    console.log('HUIIiiiiiiiiii');
 
     return existingItem;
   }
