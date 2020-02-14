@@ -1,3 +1,4 @@
+import StellarSdk from "stellar-sdk";
 export default () => ({
   nomicsApiKey: process.env.NOMICS_API_KEY,
   database: {
@@ -22,5 +23,9 @@ export default () => ({
     host: process.env.FLUENTD_TAG_PREFIX || 'localhost',
     port: +process.env.FLUENTD_PORT || 24224,
     tagPrefix: process.env.FLUENTD_TAG_PREFIX || 'apay',
+  },
+  stellar: {
+    horizonUrl: process.env.STELLAR_HORIZON_URL || 'https://horizon-testnet.stellar.org',
+    networkPassphrase: process.env.STELLAR_NETWORK_PASSPHRASE || StellarSdk.Networks.TESTNET,
   }
 });

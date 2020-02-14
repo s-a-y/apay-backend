@@ -4,10 +4,10 @@ import {StellarService} from "./stellar.service";
 import {ConfigModule, ConfigService} from "@nestjs/config";
 import configuration from './config/configuration';
 import {TypeOrmModule} from "@nestjs/typeorm";
-import {RatesLog} from "./entities/rates_log.entity";
+import {RatesLog} from "./entities/rates-log.entity";
 import {RatesService} from "./rates.service";
-import {RateHistoryService} from "./rate_history.service";
-import {RateHistory} from "./entities/rate_history.entity";
+import {RateHistoryService} from "./rate-history.service";
+import {RateHistory} from "./entities/rate-history.entity";
 
 @Module({
   imports: [
@@ -27,6 +27,6 @@ import {RateHistory} from "./entities/rate_history.entity";
     TypeOrmModule.forFeature([RatesLog, RateHistory]),
   ],
   controllers: [AppController],
-  providers: [StellarService, RatesService, RateHistoryService],
+  providers: [StellarService, RatesService, RateHistoryService, ConfigService],
 })
 export class AppModule {}

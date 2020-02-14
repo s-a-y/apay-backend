@@ -4,9 +4,9 @@ import {HttpModule} from "@nestjs/common";
 import {ConfigModule, ConfigService} from "@nestjs/config";
 import configuration from "./config/configuration";
 import {TypeOrmModule} from "@nestjs/typeorm";
-import {RatesLog} from "./entities/rates_log.entity";
-import {RateHistory} from "./entities/rate_history.entity";
-import {RateHistoryService} from "./rate_history.service";
+import {RatesLog} from "./entities/rates-log.entity";
+import {RateHistory} from "./entities/rate-history.entity";
+import {RateHistoryService} from "./rate-history.service";
 
 describe('RatesService', () => {
   let ratesService: RatesService;

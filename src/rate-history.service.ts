@@ -5,7 +5,7 @@ import {AbstractService} from "./abstract.service";
 import {RateHistoryData} from "./app.interfaces";
 import {InjectRepository} from "@nestjs/typeorm";
 import {OrderOption, SupportedCurrency} from "./app.enums";
-import {RateHistory} from "./entities/rate_history.entity";
+import {RateHistory} from "./entities/rate-history.entity";
 import { from } from 'rxjs';
 import {flatMap, map, mergeMap} from "rxjs/operators";
 import {MyLoggerService} from "./my-logger.service";

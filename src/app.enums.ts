@@ -23,6 +23,11 @@ export enum OrderOption {
     DESC = "DESC"
 }
 
+export enum BalanceMutationType {
+    debit = 'debit',
+    credit = 'credit',
+}
+
 export enum EntityField {
     cursor = 'cursor',
 }

@@ -1,6 +1,6 @@
 import {HttpService, Injectable} from '@nestjs/common';
 import {ConfigService} from "@nestjs/config";
-import {RatesLog} from "./entities/rates_log.entity";
+import {RatesLog} from "./entities/rates-log.entity";
 import {getRepository, Repository, SelectQueryBuilder} from "typeorm";
 import {AbstractService} from "./abstract.service";
 import {GetRatesLogDto} from "./dto/get_rates_log.dto";
