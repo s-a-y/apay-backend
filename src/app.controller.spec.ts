@@ -17,9 +17,6 @@ describe('AppController', () => {
 
   describe('root', () => {
     it('should return "TODO"', () => {
-      expect(appController.getBalances()).toBe('TODO');
-    });
-    it('should return "TODO"', () => {
       expect(appController.getRates({} as GetRatesLogDto)).toBe('TODO');
     });
   });

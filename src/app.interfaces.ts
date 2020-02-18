@@ -10,6 +10,16 @@ export interface Balance {
   }]
 }
 
+export interface DailyBalance {
+  id: string,
+  cursor: string,
+  accountId: string,
+  asset: Asset,
+  amount: string,
+  date: string,
+  createdAt: Date,
+}
+
 export interface Asset {
   code: string;
   issuer: string;

@@ -9,6 +9,7 @@ import {RatesService} from "./rates.service";
 import {RateHistoryService} from "./rate-history.service";
 import {RateHistory} from "./entities/rate-history.entity";
 import {DailyBalanceService} from "./daily-balance.service";
+import {DailyBalance} from "./entities/daily-balance.entity";
 
 @Module({
   imports: [
@@ -18,14 +19,10 @@ import {DailyBalanceService} from "./daily-balance.service";
       load: [configuration]
     }),
     TypeOrmModule.forRootAsync({
-      useFactory: (config: ConfigService) => {
-        const cfg = config.get('database');
-        cfg.entities = [RatesLog, RateHistory];
-        return cfg;
-      },
+      useFactory: (config: ConfigService) => config.get('database'),
       inject: [ConfigService],
     }),
-    TypeOrmModule.forFeature([RatesLog, RateHistory]),
+    TypeOrmModule.forFeature([DailyBalance, RatesLog, RateHistory]),
   ],
   controllers: [AppController],
   providers: [

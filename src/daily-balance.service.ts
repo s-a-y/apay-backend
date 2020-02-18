@@ -5,10 +5,11 @@ import {InjectRepository} from "@nestjs/typeorm";
 import {OrderOption} from "./app.enums";
 import {MyLoggerService} from "./my-logger.service";
 import {DailyBalance} from "./entities/daily-balance.entity";
+import {Asset, DailyBalance as DailyBalanceInterface} from './app.interfaces';
 import {GetDailyBalancesDto} from "./dto/get-daily-balances.dto";
 
 @Injectable()
-export class DailyBalanceService extends AbstractService<GetDailyBalancesDto, DailyBalance, DailyBalance> {
+export class DailyBalanceService extends AbstractService<GetDailyBalancesDto, DailyBalance, DailyBalanceInterface> {
   private readonly logger = new MyLoggerService(DailyBalanceService.name);
   constructor(
     @InjectRepository(DailyBalance)
@@ -34,6 +35,8 @@ export class DailyBalanceService extends AbstractService<GetDailyBalancesDto, Da
           break;
       }
     }
+
+    builder.andWhere('daily_balance.asset = :value', {value: `${input.asset.code} ${input.asset.issuer}`});
 
     if (input.createdAt) {
       builder.andWhere('daily_balance.createdAt = :value', { value: input.createdAt });
@@ -64,6 +67,19 @@ export class DailyBalanceService extends AbstractService<GetDailyBalancesDto, Da
     }
 
     return builder;
+  }
+
+  async mapPagedItems(balance: DailyBalance) {
+    // @ts-ignore
+    return Promise.resolve({
+      id: balance.id,
+      cursor: balance.cursor.toString(),
+      accountId: balance.accountId,
+      asset: {code: balance.asset.split(' ')[0], issuer: balance.asset.split(' ')[1]} as Asset,
+      amount: balance.amount.toString(),
+      date: balance.date,
+      createdAt: balance.createdAt,
+    } as DailyBalanceInterface);
   }
 
   async upsertDailyBalance(balance) {

@@ -1,6 +1,6 @@
 import {IsDate, IsOptional} from 'class-validator';
 import {Transform} from "class-transformer";
-import {EntitiesOrder, GetEntitiesInputInterface} from "../app.interfaces";
+import {Asset, EntitiesOrder, GetEntitiesInputInterface} from "../app.interfaces";
 
 export class GetDailyBalancesDto implements GetEntitiesInputInterface {
   @IsOptional()
@@ -9,9 +9,7 @@ export class GetDailyBalancesDto implements GetEntitiesInputInterface {
   @IsOptional()
   cursor: string;
 
-  assetCode: string;
-
-  assetIssuer: string;
+  asset: Asset;
 
   @IsOptional()
   order: EntitiesOrder;
