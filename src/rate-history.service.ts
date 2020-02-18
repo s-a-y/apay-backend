@@ -9,7 +9,7 @@ import {RateHistory} from "./entities/rate-history.entity";
 import { from } from 'rxjs';
 import {flatMap, map, mergeMap} from "rxjs/operators";
 import {MyLoggerService} from "./my-logger.service";
-import {GetRateHistoryDto} from "./dto/get_rate_history.dto";
+import {GetRateHistoryDto} from "./dto/get-rate-history.dto";
 
 @Injectable()
 export class RateHistoryService extends AbstractService<GetRateHistoryDto, RateHistory, RateHistory> {

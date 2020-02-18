@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 import {StellarService} from "./stellar.service";
-import {GetRatesLogDto} from "./dto/get_rates_log.dto";
+import {GetRatesLogDto} from "./dto/get-rates-log.dto";
 
 describe('AppController', () => {
   let appController: AppController;

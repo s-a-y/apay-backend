@@ -1,4 +1,4 @@
-import {Entity, Column, PrimaryGeneratedColumn, Generated, Unique} from 'typeorm';
+import {Entity, Column, PrimaryGeneratedColumn, Generated, Unique, CreateDateColumn} from 'typeorm';
 import BigNumber from "bignumber.js";
 import {BigNumberToStringTransformer} from "../app.transformers";
 
@@ -26,6 +26,15 @@ export class DailyBalance {
   })
   amount: BigNumber;
 
-  @Column()
-  date: string;
+  @Column({type: "date"})
+  date: Date;
+
+  @Column({ length: 24, default: '0'.repeat(10) })
+  dateCursor: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @Column({ length: 24, default: '0'.repeat(10) })
+  createdAtCursor: string;
 }

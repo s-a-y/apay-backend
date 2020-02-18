@@ -11,6 +11,7 @@ import {getRepository} from "typeorm";
 import {DailyBalance} from "./entities/daily-balance.entity";
 import {MyLoggerService} from "./my-logger.service";
 import {DailyBalanceExtractorService} from "./daily-balance-extractor.service";
+import {DailyBalanceService} from "./daily-balance.service";
 
 jest.setTimeout(1000000000);
 
@@ -34,18 +35,20 @@ describe('RatesService', () => {
   let configService: ConfigService;
   let stellarTransactionService: StellarFetcherService;
   let stellarService: StellarService;
+  let dailyBalanceService: DailyBalanceService;
   let logger: MyLoggerService;
 
   const publicKey = 'GAUTUYY2THLF7SGITDFMXJVYH3LHDSMGEAKSBU267M2K7A3W543CKUEF';
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
-      providers: [ConfigService, StellarFetcherService, StellarService],
+      providers: [ConfigService, StellarFetcherService, StellarService, DailyBalanceService],
       imports: [
         TypeOrmModule.forRootAsync({
           useFactory: (config: ConfigService) => config.get('database'),
           inject: [ConfigService],
         }),
+        TypeOrmModule.forFeature([DailyBalance]),
         HttpModule,
         ConfigModule.forRoot({
           isGlobal: true,
@@ -58,6 +61,7 @@ describe('RatesService', () => {
     configService = app.get<ConfigService>(ConfigService);
     stellarTransactionService = app.get<StellarFetcherService>(StellarFetcherService);
     stellarService = app.get<StellarService>(StellarService);
+    dailyBalanceService = app.get<DailyBalanceService>(DailyBalanceService);
     logger = new MyLoggerService('test');
   });
 
@@ -90,7 +94,7 @@ describe('RatesService', () => {
       }
       if (true) {
         const accountId = pubKey2;
-        const extractor = new DailyBalanceExtractorService();
+        const extractor = new DailyBalanceExtractorService(dailyBalanceService);
         await extractor.extract({accountId});
       }
       if (false) {

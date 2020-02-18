@@ -1,8 +1,8 @@
 import {Controller, Get, Query} from '@nestjs/common';
-import {GetRatesLogDto} from "./dto/get_rates_log.dto";
+import {GetRatesLogDto} from "./dto/get-rates-log.dto";
 import {RatesService} from "./rates.service";
 import {RateHistoryService} from "./rate-history.service";
-import {GetRateHistoryDto} from "./dto/get_rate_history.dto";
+import {GetRateHistoryDto} from "./dto/get-rate-history.dto";
 
 @Controller()
 export class AppController {

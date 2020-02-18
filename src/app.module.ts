@@ -8,6 +8,7 @@ import {RatesLog} from "./entities/rates-log.entity";
 import {RatesService} from "./rates.service";
 import {RateHistoryService} from "./rate-history.service";
 import {RateHistory} from "./entities/rate-history.entity";
+import {DailyBalanceService} from "./daily-balance.service";
 
 @Module({
   imports: [
@@ -27,6 +28,12 @@ import {RateHistory} from "./entities/rate-history.entity";
     TypeOrmModule.forFeature([RatesLog, RateHistory]),
   ],
   controllers: [AppController],
-  providers: [StellarService, RatesService, RateHistoryService, ConfigService],
+  providers: [
+    ConfigService,
+    DailyBalanceService,
+    RateHistoryService,
+    RatesService,
+    StellarService,
+  ],
 })
 export class AppModule {}

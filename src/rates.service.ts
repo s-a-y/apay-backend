@@ -3,7 +3,7 @@ import {ConfigService} from "@nestjs/config";
 import {RatesLog} from "./entities/rates-log.entity";
 import {getRepository, Repository, SelectQueryBuilder} from "typeorm";
 import {AbstractService} from "./abstract.service";
-import {GetRatesLogDto} from "./dto/get_rates_log.dto";
+import {GetRatesLogDto} from "./dto/get-rates-log.dto";
 import {Rates, RatesItem} from "./app.interfaces";
 import {InjectRepository} from "@nestjs/typeorm";
 import {OrderOption} from "./app.enums";

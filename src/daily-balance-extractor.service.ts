@@ -6,10 +6,15 @@ import {concatMap, map} from "rxjs/operators";
 import {DailyBalance} from "./entities/daily-balance.entity";
 import BigNumber from "bignumber.js";
 import {MyLoggerService} from "./my-logger.service";
+import {DailyBalanceService} from "./daily-balance.service";
 
 @Injectable()
 export class DailyBalanceExtractorService {
   private readonly logger = new MyLoggerService(DailyBalanceExtractorService.name);
+
+  constructor(
+    protected readonly dailyBalanceService: DailyBalanceService,
+  ) {}
 
   dumpBalances (balances) {
     return Promise.all(Object.keys(balances).map((asset) => {
@@ -20,14 +25,7 @@ export class DailyBalanceExtractorService {
       b.asset = balance.asset;
       b.amount = balance.amount;
       b.accountId = balance.accountId;
-      return getRepository(DailyBalance)
-        .createQueryBuilder()
-        .insert()
-        .into(DailyBalance)
-        .values(b)
-        .onConflict(`ON CONSTRAINT "UQ_accountId_asset_date" DO UPDATE SET "amount" = :amount`)
-        .setParameters({amount: balance.amount.toString()})
-        .execute();
+      return this.dailyBalanceService.upsertDailyBalance(b);
     })).then(r => this.logger.log(r), error => this.logger.error(error));
   };
 
@@ -54,7 +52,7 @@ export class DailyBalanceExtractorService {
               m.accountId = o.BalanceMutation_accountId;
               m.asset = o.BalanceMutation_asset;
               m.amount = new BigNumber(o.BalanceMutation_amount).multipliedBy((o.BalanceMutation_type === 'credit' ? 1 : -1));
-              m.date = new Date(o.BalanceMutation_at).toISOString().slice(0,10);
+              m.date = new Date(o.BalanceMutation_at);
 
               return m;
             }),
