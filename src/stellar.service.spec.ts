@@ -7,14 +7,10 @@ import {TypeOrmModule} from "@nestjs/typeorm";
 import {StellarFetcherService} from "./stellar-fetcher.service";
 import {StellarService} from "./stellar.service";
 import StellarSdk from "stellar-sdk";
-import {Asset} from "stellar-base";
 import {getRepository} from "typeorm";
-import {BalanceMutation} from "./entities/balance-mutation.entity";
-import {Observable, fromEvent, Subject} from "rxjs";
-import {concatMap, finalize, map} from "rxjs/operators";
 import {DailyBalance} from "./entities/daily-balance.entity";
-import BigNumber from "bignumber.js";
 import {MyLoggerService} from "./my-logger.service";
+import {DailyBalanceExtractorService} from "./daily-balance-extractor.service";
 
 jest.setTimeout(1000000000);
 
@@ -93,53 +89,9 @@ describe('RatesService', () => {
         await stellarTransactionService.fetchEffectsForAccount(pubKey2);
       }
       if (true) {
-        const accountId = pubKey1;
-        const last = await getRepository(BalanceMutation)
-          .createQueryBuilder()
-          .where('BalanceMutation.accountId = :id', {id: accountId})
-          .orderBy('BalanceMutation.at', 'DESC')
-          .getOne();
-        await getRepository(BalanceMutation)
-          .createQueryBuilder()
-          .where('BalanceMutation.accountId = :id', {id: accountId})
-          .orderBy('BalanceMutation.at', 'ASC')
-          .stream()
-          .then((stream) => {
-            const subscription = fromEvent(stream, 'data')
-              .pipe(
-                map((o: any) => {
-                  const m = new DailyBalance();
-                  m.id = o.BalanceMutation_id;
-                  m.accountId = o.BalanceMutation_accountId;
-                  m.asset = o.BalanceMutation_asset;
-                  m.amount = new BigNumber(o.BalanceMutation_amount).multipliedBy((o.BalanceMutation_type === 'credit' ? 1 : -1));
-                  m.date = new Date(o.BalanceMutation_at).toISOString().slice(0,10);
-
-                  return m;
-                }),
-                concatMap(async (instantBalance: DailyBalance) => {
-                  if (currentDateLabel !== instantBalance.date && currentDateLabel !== null) {
-                    await dumpBalances(balances);
-                  }
-
-                  currentDateLabel = instantBalance.date;
-
-                  if (!balances[instantBalance.asset]) {
-                    balances[instantBalance.asset] = instantBalance;
-                  } else {
-                    balances[instantBalance.asset].amount = balances[instantBalance.asset].amount.plus(instantBalance.amount);
-                    balances[instantBalance.asset].date = instantBalance.date;
-                  }
-
-                  if (instantBalance.id === last.id) {
-                    await dumpBalances(balances)
-                      .then(() => subscription.unsubscribe());
-                  }
-
-                  return instantBalance;
-                }),
-              ).subscribe();
-          });
+        const accountId = pubKey2;
+        const extractor = new DailyBalanceExtractorService();
+        await extractor.extract({accountId});
       }
       if (false) {
         await stellarService.buildAndSubmitTx(

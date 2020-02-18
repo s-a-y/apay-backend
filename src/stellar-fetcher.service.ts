@@ -1,5 +1,4 @@
 import StellarSdk, {ServerApi} from 'stellar-sdk';
-import StellarBase from 'stellar-base';
 import {Subject} from "rxjs";
 import {MyLoggerService} from "./my-logger.service";
 import {ConfigService} from "@nestjs/config";
@@ -104,68 +103,6 @@ export class StellarFetcherService {
           throw error;
         }
       });
-  }
-
-
-  async fetchTransactionsForAccount(accountId: string, cursor: string = '0') {
-    const subject = new Subject<ServerApi.TransactionRecord>();
-
-    this.initTransactionsSubject(subject, accountId, cursor);
-
-    return new Promise((resolve, reject) => {
-      subject.subscribe(
-        (value) => {
-          const tx = new StellarBase.Transaction(value.envelope_xdr);
-          const operations = tx.operations.forEach((operation) => {
-            return [
-              'createAccount',
-              'payment',
-              //'pathPaymentStrictReceive',
-              //'pathPaymentStrictSend',
-              //'createPassiveSellOffer',
-              //'manageSellOffer',
-              //'manageBuyOffer',
-              //'setOptions',
-              //'changeTrust',
-              //'allowTrust',
-              //'accountMerge',
-              //'inflation',
-              //'manageData',
-              //'bumpSequence',
-            ].includes(operation.type);
-          });
-          //this.logger.log(value);
-          // @ts-ignore
-        },
-        (error) => {
-          console.log(error);
-          //reject(error);
-        },
-        () => {
-          console.log('complete');
-          resolve();
-        }
-      );
-    });
-  }
-
-  initTransactionsSubject(subject: Subject<ServerApi.TransactionRecord>, accountId: string, cursor: string) {
-    const self = this;
-    return this.server.transactions()
-      .forAccount(accountId)
-      //.cursor(cursor)
-      .order("asc")
-      .limit(5)
-      .join('transactions')
-      .stream({
-        onmessage(value) {
-          subject.next(value);
-        },
-        onerror(event) {
-          //subject.error(event);
-        },
-        //reconnectTimeout: 1000
-      })
   }
 
   initEffectsSubject(subject: Subject<ServerApi.EffectRecord>, accountId: string, cursor: string, limit: number) {
