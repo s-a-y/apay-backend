@@ -1,10 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import {Test, TestingModule} from '@nestjs/testing';
 import {RatesService} from "./rates.service";
 import {HttpModule} from "@nestjs/common";
 import {ConfigModule, ConfigService} from "@nestjs/config";
 import configuration from "./config/configuration";
 import {TypeOrmModule} from "@nestjs/typeorm";
-import {StellarFetcherService} from "./stellar-fetcher.service";
+import {FetchEffectsMode, StellarFetcherService} from "./stellar-fetcher.service";
 import {StellarService} from "./stellar.service";
 import StellarSdk from "stellar-sdk";
 import {getRepository} from "typeorm";
@@ -88,11 +88,11 @@ describe('RatesService', () => {
             .execute();
         })).then(r => logger.log(r), error => logger.error(error));
       };
-      if (false) {
-        //await stellarTransactionService.fetchEffectsForAccount(pubKey1);
-        await stellarTransactionService.fetchEffectsForAccount(pubKey2);
-      }
       if (true) {
+        //await stellarTransactionService.fetchEffectsForAccount({accountId: pubKey1});
+        await stellarTransactionService.fetchEffectsForAccount({accountId: pubKey2, mode: FetchEffectsMode.LAST_FROM_DATE, fromDate: new Date('2020-02-10')});
+      }
+      if (false) {
         const accountId = pubKey2;
         const extractor = new DailyBalanceExtractorService(dailyBalanceService);
         await extractor.extract({accountId});

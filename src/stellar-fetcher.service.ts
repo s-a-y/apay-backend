@@ -1,5 +1,5 @@
 import StellarSdk, {ServerApi} from 'stellar-sdk';
-import {Subject} from "rxjs";
+import {from, of, Subject} from "rxjs";
 import {MyLoggerService} from "./my-logger.service";
 import {ConfigService} from "@nestjs/config";
 import {Injectable} from "@nestjs/common";
@@ -7,6 +7,21 @@ import {BalanceMutation} from "./entities/balance-mutation.entity";
 import {BalanceMutationType} from "./app.enums";
 import BigNumber from "bignumber.js";
 import {getRepository} from "typeorm";
+import {timeoutWith} from "rxjs/operators";
+
+export enum FetchEffectsMode {
+  FROM_BEGINING,
+  LAST_FROM_DATE,
+}
+
+export interface FetchEffectsOptions {
+  accountId: string,
+  mode: FetchEffectsMode,
+  fromDate?: Date,
+}
+
+type FetchedEffectRecord = ServerApi.EffectRecord | null;
+const COMPLETED = null;
 
 @Injectable()
 export class StellarFetcherService {
@@ -15,19 +30,44 @@ export class StellarFetcherService {
   constructor(
     private readonly configService: ConfigService,
   ) {
+
     this.server = new StellarSdk.Server(this.configService.get('stellar.horizonUrl'));
   }
 
-  async fetchEffectsForAccount(accountId: string, cursor = '0', limit = 200) {
-    const subject = new Subject<ServerApi.EffectRecord>();
+  async fetchEffectsForAccount({accountId, mode = FetchEffectsMode.FROM_BEGINING, fromDate}: FetchEffectsOptions) {
+    const subject = new Subject<FetchedEffectRecord>();
+    const observable = from(subject)
+      .pipe(
+        timeoutWith(5000, of(COMPLETED))
+      );
 
-    this.initEffectsSubject(subject, accountId, cursor, limit);
+    const closeStream = this.initEffectsSubject(subject, {accountId, mode, fromDate});
 
     return new Promise((resolve, reject) => {
-      subject.subscribe(
+      const subscription = observable.subscribe(
         async (value) => {
-          //console.log(value);
           let balanceMutation: BalanceMutation;
+
+          if (value === COMPLETED) {
+            subscription.unsubscribe();
+            closeStream();
+            resolve();
+            return;
+          }
+
+          switch (mode) {
+            case FetchEffectsMode.FROM_BEGINING:
+              break;
+            case FetchEffectsMode.LAST_FROM_DATE:
+              this.logger.log(value.created_at);
+              if (new Date(value.created_at) < fromDate) {
+                subscription.unsubscribe();
+                closeStream();
+                resolve();
+                return;
+              }
+              break;
+          }
           switch (value.type) {
             case 'account_credited':
               balanceMutation = new BalanceMutation();
@@ -105,15 +145,28 @@ export class StellarFetcherService {
       });
   }
 
-  initEffectsSubject(subject: Subject<ServerApi.EffectRecord>, accountId: string, cursor: string, limit: number) {
-    const self = this;
-    return this.server.effects()
+  initEffectsSubject(
+    subject: Subject<FetchedEffectRecord>,
+    {accountId, mode = FetchEffectsMode.FROM_BEGINING, fromDate}: FetchEffectsOptions,
+  ) {
+    if (mode === FetchEffectsMode.LAST_FROM_DATE && !fromDate) {
+      throw new Error('fromDate is not defined!');
+    }
+    const builder = this.server.effects()
       .forAccount(accountId)
-      //.cursor(cursor)
       .order("asc")
-      .limit(limit)
-      .join('transactions')
-      .stream({
+      .join('transactions');
+
+    switch (mode) {
+      case FetchEffectsMode.FROM_BEGINING:
+        builder.order("asc");
+        break;
+      case FetchEffectsMode.LAST_FROM_DATE:
+        builder.order("desc");
+        break;
+    }
+
+    return builder.stream({
         onmessage(value) {
           subject.next(value);
         },
