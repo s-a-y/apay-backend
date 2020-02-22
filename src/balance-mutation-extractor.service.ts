@@ -14,7 +14,7 @@ export enum FetchEffectsMode {
   LAST_FROM_DATE,
 }
 
-export interface FetchEffectsOptions {
+export interface ExtractBalanceMutationOptions {
   accountId: string,
   mode: FetchEffectsMode,
   fromDate?: Date,
@@ -24,8 +24,8 @@ type FetchedEffectRecord = ServerApi.EffectRecord | null;
 const COMPLETED = null;
 
 @Injectable()
-export class StellarFetcherService {
-  private readonly logger = new MyLoggerService(StellarFetcherService.name);
+export class BalanceMutationExtractorService {
+  private readonly logger = new MyLoggerService(BalanceMutationExtractorService.name);
   private server;
   constructor(
     private readonly configService: ConfigService,
@@ -34,7 +34,7 @@ export class StellarFetcherService {
     this.server = new StellarSdk.Server(this.configService.get('stellar.horizonUrl'));
   }
 
-  async fetchEffectsForAccount({accountId, mode = FetchEffectsMode.FROM_BEGINING, fromDate}: FetchEffectsOptions) {
+  async extract({accountId, mode = FetchEffectsMode.FROM_BEGINING, fromDate}: ExtractBalanceMutationOptions) {
     const subject = new Subject<FetchedEffectRecord>();
     const observable = from(subject)
       .pipe(
@@ -104,7 +104,7 @@ export class StellarFetcherService {
               balanceMutation.accountId = value.account;
               balanceMutation.at = new Date(value.created_at);
               balanceMutation.type = BalanceMutationType.credit;
-              balanceMutation.asset = value.bought_asset_type === 'native' ? 'native' : `${value.sold_asset_code} ${value.sold_asset_issuer}`;
+              balanceMutation.asset = value.bought_asset_type === 'native' ? 'native' : `${value.bought_asset_code} ${value.bought_asset_issuer}`;
               balanceMutation.amount = new BigNumber(value.bought_amount);
               await this.saveBalanceMutationSafely(balanceMutation);
               break;
@@ -147,7 +147,7 @@ export class StellarFetcherService {
 
   initEffectsSubject(
     subject: Subject<FetchedEffectRecord>,
-    {accountId, mode = FetchEffectsMode.FROM_BEGINING, fromDate}: FetchEffectsOptions,
+    {accountId, mode = FetchEffectsMode.FROM_BEGINING, fromDate}: ExtractBalanceMutationOptions,
   ) {
     if (mode === FetchEffectsMode.LAST_FROM_DATE && !fromDate) {
       throw new Error('fromDate is not defined!');

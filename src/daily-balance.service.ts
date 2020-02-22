@@ -97,7 +97,7 @@ export class DailyBalanceService extends AbstractService<GetDailyBalancesDto, Da
         return this.findOne({id: result.identifiers[0].id});
       })
       .then((balance) => {
-        balance.dateCursor = this.generateDateCursor(balance.date, balance.cursor);
+        balance.dateCursor = this.generateDateCursor(new Date(balance.date), balance.cursor);
         balance.createdAtCursor = this.generateDateCursor(balance.createdAt, balance.cursor);
         return this.entitiesRepository.save(balance);
       });

@@ -3,6 +3,7 @@ import {MyLoggerService} from "./my-logger.service";
 import StellarSdk from "stellar-sdk";
 import {ConfigService} from "@nestjs/config";
 import {Operation} from "stellar-base";
+import BigNumber from "bignumber.js";
 
 @Injectable()
 export class StellarService {
@@ -14,6 +15,16 @@ export class StellarService {
   ) {
     this.server = new StellarSdk.Server(this.configService.get('stellar.horizonUrl'));
     this.networkPassphrase = this.configService.get('stellar.networkPassphrase');
+  }
+
+  async fetchBalances(accountId: string): Promise<[{ amount: BigNumber, asset: string }]> {
+    const account = await this.server.loadAccount(accountId);
+    return account.balances.map((line) => {
+      return {
+        amount: new BigNumber(line.balance),
+        asset: line.asset_type === 'native' ? 'native' : `${line.asset_code} ${line.asset_issuer}`,
+      };
+    })
   }
 
   async buildAndSubmitTx(sourceSecretKey, operations: Operation[] = [], {memo = null, timeout = 30, secretKeys = []}) {

@@ -4,13 +4,13 @@ import {HttpModule} from "@nestjs/common";
 import {ConfigModule, ConfigService} from "@nestjs/config";
 import configuration from "./config/configuration";
 import {TypeOrmModule} from "@nestjs/typeorm";
-import {FetchEffectsMode, StellarFetcherService} from "./stellar-fetcher.service";
+import {FetchEffectsMode, BalanceMutationExtractorService} from "./balance-mutation-extractor.service";
 import {StellarService} from "./stellar.service";
 import StellarSdk from "stellar-sdk";
 import {getRepository} from "typeorm";
 import {DailyBalance} from "./entities/daily-balance.entity";
 import {MyLoggerService} from "./my-logger.service";
-import {DailyBalanceExtractorService} from "./daily-balance-extractor.service";
+import {DailyBalanceExtractorService, ExtractDailyBalanceMode} from "./daily-balance-extractor.service";
 import {DailyBalanceService} from "./daily-balance.service";
 
 jest.setTimeout(1000000000);
@@ -33,7 +33,7 @@ jest.setTimeout(1000000000);
 
 describe('RatesService', () => {
   let configService: ConfigService;
-  let stellarTransactionService: StellarFetcherService;
+  let stellarTransactionService: BalanceMutationExtractorService;
   let stellarService: StellarService;
   let dailyBalanceService: DailyBalanceService;
   let logger: MyLoggerService;
@@ -42,7 +42,7 @@ describe('RatesService', () => {
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
-      providers: [ConfigService, StellarFetcherService, StellarService, DailyBalanceService],
+      providers: [ConfigService, BalanceMutationExtractorService, StellarService, DailyBalanceService],
       imports: [
         TypeOrmModule.forRootAsync({
           useFactory: (config: ConfigService) => config.get('database'),
@@ -59,7 +59,7 @@ describe('RatesService', () => {
     }).compile();
 
     configService = app.get<ConfigService>(ConfigService);
-    stellarTransactionService = app.get<StellarFetcherService>(StellarFetcherService);
+    stellarTransactionService = app.get<BalanceMutationExtractorService>(BalanceMutationExtractorService);
     stellarService = app.get<StellarService>(StellarService);
     dailyBalanceService = app.get<DailyBalanceService>(DailyBalanceService);
     logger = new MyLoggerService('test');
@@ -88,14 +88,22 @@ describe('RatesService', () => {
             .execute();
         })).then(r => logger.log(r), error => logger.error(error));
       };
-      if (true) {
-        //await stellarTransactionService.fetchEffectsForAccount({accountId: pubKey1});
-        await stellarTransactionService.fetchEffectsForAccount({accountId: pubKey2, mode: FetchEffectsMode.LAST_FROM_DATE, fromDate: new Date('2020-02-10')});
-      }
       if (false) {
-        const accountId = pubKey2;
-        const extractor = new DailyBalanceExtractorService(dailyBalanceService);
-        await extractor.extract({accountId});
+        await stellarTransactionService.extract({
+          accountId: pubKey1,
+          mode: FetchEffectsMode.FROM_BEGINING,
+        });
+        await stellarTransactionService.extract({
+          accountId: pubKey2,
+          mode: FetchEffectsMode.FROM_BEGINING,
+          //fromDate: new Date('2020-02-10'),
+        });
+      }
+      if (true) {
+        const extractor = new DailyBalanceExtractorService(dailyBalanceService, stellarService);
+        await extractor.extract({accountId: pubKey1, mode: ExtractDailyBalanceMode.LAST_FROM_DATE, fromDate: new Date('2020-02-01')});
+        await extractor.extract({accountId: pubKey2, mode: ExtractDailyBalanceMode.LAST_FROM_DATE, fromDate: new Date('2020-02-01')});
+        //await extractor.extract({accountId, mode: ExtractDailyBalanceMode.FROM_BEGINING});
       }
       if (false) {
         await stellarService.buildAndSubmitTx(
