@@ -68,6 +68,7 @@ export class BalanceMutationExtractorService {
               }
               break;
           }
+          this.logger.log(`%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ${value.created_at}`);
           switch (value.type) {
             case 'account_credited':
               balanceMutation = new BalanceMutation();
@@ -135,6 +136,7 @@ export class BalanceMutationExtractorService {
   }
 
   async saveBalanceMutationSafely(balanceMutation: BalanceMutation) {
+    this.logger.log(`%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ${balanceMutation.type} ${balanceMutation.asset.substr(0, 3)} ${balanceMutation.amount}`);
     return getRepository(BalanceMutation).save(balanceMutation)
       .catch((error) => {
         if (error.message.includes('duplicate key value violates unique constraint "UQ_accountId_type_externalId')) {

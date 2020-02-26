@@ -67,43 +67,22 @@ describe('RatesService', () => {
 
   describe('RatesService', () => {
     it('fetch', async () => {
-      let currentDateLabel = null;
-      let balances: {[asset: string]: DailyBalance} = {};
-      const dumpBalances = (balances) => {
-        return Promise.all(Object.keys(balances).map((asset) => {
-          const balance: DailyBalance = balances[asset];
-          logger.log(`DUMPED ${balance.asset} - ${balance.amount.toString()} ${balance.date}`);
-          const b = new DailyBalance();
-          b.date = balance.date;
-          b.asset = balance.asset;
-          b.amount = balance.amount;
-          b.accountId = balance.accountId;
-          return getRepository(DailyBalance)
-            .createQueryBuilder()
-            .insert()
-            .into(DailyBalance)
-            .values(b)
-            .onConflict(`ON CONSTRAINT "UQ_accountId_asset_date" DO UPDATE SET "amount" = :amount`)
-            .setParameters({amount: balance.amount.toString()})
-            .execute();
-        })).then(r => logger.log(r), error => logger.error(error));
-      };
       if (false) {
         await stellarTransactionService.extract({
           accountId: pubKey1,
           mode: FetchEffectsMode.FROM_BEGINING,
         });
-        await stellarTransactionService.extract({
-          accountId: pubKey2,
-          mode: FetchEffectsMode.FROM_BEGINING,
-          //fromDate: new Date('2020-02-10'),
-        });
+        //await stellarTransactionService.extract({
+        //  accountId: pubKey2,
+        //  mode: FetchEffectsMode.FROM_BEGINING,
+        //  //fromDate: new Date('2020-02-10'),
+        //});
       }
       if (true) {
         const extractor = new DailyBalanceExtractorService(dailyBalanceService, stellarService);
         await extractor.extract({accountId: pubKey1, mode: ExtractDailyBalanceMode.LAST_FROM_DATE, fromDate: new Date('2020-02-01')});
-        await extractor.extract({accountId: pubKey2, mode: ExtractDailyBalanceMode.LAST_FROM_DATE, fromDate: new Date('2020-02-01')});
-        //await extractor.extract({accountId, mode: ExtractDailyBalanceMode.FROM_BEGINING});
+        //await extractor.extract({accountId: pubKey2, mode: ExtractDailyBalanceMode.LAST_FROM_DATE, fromDate: new Date('2020-02-01')});
+        //await extractor.extract({accountId: pubKey1, mode: ExtractDailyBalanceMode.FROM_BEGINING});
       }
       if (false) {
         await stellarService.buildAndSubmitTx(

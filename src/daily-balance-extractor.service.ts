@@ -1,8 +1,8 @@
 import {Injectable} from '@nestjs/common';
 import {getRepository} from "typeorm";
 import {BalanceMutation} from "./entities/balance-mutation.entity";
-import {fromEvent} from "rxjs";
-import {concatMap, map} from "rxjs/operators";
+import {fromEvent, of} from "rxjs";
+import {concatMap, map, timeoutWith} from "rxjs/operators";
 import {DailyBalance} from "./entities/daily-balance.entity";
 import BigNumber from "bignumber.js";
 import {MyLoggerService} from "./my-logger.service";
@@ -19,6 +19,58 @@ export interface ExtractDailyBalanceOptions {
   accountId: string,
   mode: ExtractDailyBalanceMode,
   fromDate?: Date,
+}
+type AssetBalances = {[asset: string]: DailyBalance};
+
+const COMPLETED = null;
+
+type AssetCounters = {[asset: string]: {amount: BigNumber, date: string}};
+
+class BalanceCollector {
+  private amount: BigNumber = new BigNumber(0);
+  private date: string;
+
+  constructor(
+    protected readonly mode: ExtractDailyBalanceMode,
+    protected readonly dailyBalanceService: DailyBalanceService,
+    protected readonly asset: string,
+    protected readonly accountId: string,
+  ) {}
+
+  async add(balance: DailyBalance) {
+    switch (this.mode) {
+      case ExtractDailyBalanceMode.FROM_BEGINING:
+        if (this.date !== balance.date) {
+          await this.dump();
+        }
+        this.date = balance.date;
+        this.increment(balance);
+        break;
+      case ExtractDailyBalanceMode.LAST_FROM_DATE:
+        this.increment(balance);
+        if (this.date !== balance.date) {
+          await this.dump();
+        }
+        this.date = balance.date;
+        break;
+    }
+  }
+
+  private increment(balance: DailyBalance) {
+    this.amount = this.mode === ExtractDailyBalanceMode.FROM_BEGINING
+      ? this.amount.plus(balance.amount)
+      : this.amount.minus(balance.amount);
+    this.date = balance.date;
+  }
+
+  async dump() {
+    const b = new DailyBalance();
+    b.date = this.date;
+    b.asset = this.asset;
+    b.amount = this.amount;
+    b.accountId = this.accountId;
+    return this.dailyBalanceService.upsertDailyBalance(b);
+  }
 }
 
 @Injectable()
@@ -44,90 +96,107 @@ export class DailyBalanceExtractorService {
   };
 
   async extract({accountId, mode, fromDate}: ExtractDailyBalanceOptions) {
-    let currentDateLabel = null;
-    let balances: {[asset: string]: DailyBalance};
-    let qryOrder: OrderOption;
-    let last: BalanceMutation;
+    let currentDateLabel: string = null;
+    let balances: AssetBalances;
+
+    const queryBuilder = getRepository(BalanceMutation)
+      .createQueryBuilder()
+      .where('BalanceMutation.accountId = :id', {id: accountId});
 
     switch (mode) {
       case ExtractDailyBalanceMode.FROM_BEGINING:
-        qryOrder = OrderOption.ASC;
+        queryBuilder.orderBy('BalanceMutation.at', OrderOption.ASC);
         balances = {};
-        last = await getRepository(BalanceMutation)
-          .createQueryBuilder()
-          .where('BalanceMutation.accountId = :id', {id: accountId})
-          .orderBy('BalanceMutation.at', 'DESC')
-          .limit(1)
-          .getOne();
         break;
       case ExtractDailyBalanceMode.LAST_FROM_DATE:
-        if (mode === ExtractDailyBalanceMode.LAST_FROM_DATE && !fromDate) {
+        if (!fromDate) {
           throw new Error('fromDate is not defined!');
         }
-        qryOrder = OrderOption.DESC;
+        queryBuilder
+          .andWhere('BalanceMutation.at >= :value', {value: fromDate})
+          .orderBy('BalanceMutation.at', OrderOption.DESC);
         balances = {};
         (await this.stellarService.fetchBalances(accountId)).forEach((line) => {
           const balance = new DailyBalance();
-          balance.date = new Date();
+          balance.date = (new Date()).toISOString().substr(0, 10);
           balance.amount = line.amount;
           balance.asset = line.asset;
           balance.accountId = accountId;
           balances[line.asset] = balance;
         });
-        await this.dumpBalances(balances);
-        currentDateLabel = Object.values(balances)[0].date;
-        last = await getRepository(BalanceMutation)
-          .createQueryBuilder()
-          .where('BalanceMutation.accountId = :id', {id: accountId})
-          .andWhere('BalanceMutation.at >= :value', {value: fromDate})
-          .orderBy('BalanceMutation.at', 'ASC')
-          .limit(1)
-          .getOne();
+        //await this.dumpBalances(balances);
+        //currentDateLabel = Object.values(balances)[0].date.toISOString().substr(0, 10);
         break;
     }
 
-    await getRepository(BalanceMutation)
-      .createQueryBuilder()
-      .where('BalanceMutation.accountId = :id', {id: accountId})
-      .orderBy('BalanceMutation.at', qryOrder)
+    await queryBuilder
       .stream()
       .then((stream) => {
         const subscription = fromEvent(stream, 'data')
           .pipe(
-            map((o: any) => {
-              const m = new DailyBalance();
-              m.id = o.BalanceMutation_id;
-              m.accountId = o.BalanceMutation_accountId;
-              m.asset = o.BalanceMutation_asset;
-              m.amount = new BigNumber(o.BalanceMutation_amount).multipliedBy((o.BalanceMutation_type === 'credit' ? 1 : -1));
-              m.date = new Date(o.BalanceMutation_at);
+            timeoutWith(5000, of(COMPLETED)),
+            concatMap(async (o: any) => {
+              if (o === COMPLETED) {
+                this.logger.log('COMPLETED!!!!!!!!!!!!!!!!!!!!!!!!!!')
+                switch (mode) {
+                  case ExtractDailyBalanceMode.FROM_BEGINING:
+                    await this.dumpBalances(balances);
+                    break;
+                  case ExtractDailyBalanceMode.LAST_FROM_DATE:
+                    await this.dumpBalances(balances);
+                    this.logger.log(balances);
+                    break;
+                }
 
-              return m;
-            }),
-            concatMap(async (instantBalance: DailyBalance) => {
-              if (currentDateLabel !== instantBalance.date && currentDateLabel !== null) {
-                await this.dumpBalances(balances);
-              }
-
-              currentDateLabel = instantBalance.date;
-
-              if (!balances[instantBalance.asset]) {
-                balances[instantBalance.asset] = instantBalance;
+                subscription.unsubscribe();
               } else {
-                balances[instantBalance.asset].amount = mode === ExtractDailyBalanceMode.FROM_BEGINING
-                  ? balances[instantBalance.asset].amount.plus(instantBalance.amount)
-                  : balances[instantBalance.asset].amount.minus(instantBalance.amount);
-                balances[instantBalance.asset].date = instantBalance.date;
+                const balance = this.convertRawBalanceMutationToDailyBalance(o);
+
+                this.logger.log(`>>>>>>>>>>>>>>>>>>>>> ${currentDateLabel} && ${currentDateLabel} !== ${balance.date}`);
+
+                switch (mode) {
+                  case ExtractDailyBalanceMode.FROM_BEGINING:
+                    if (currentDateLabel !== balance.date) {
+                      await this.dumpBalances(balances);
+                    }
+                    currentDateLabel = balance.date;
+                    this.incrementBalances(balances, balance, mode);
+                    break;
+                  case ExtractDailyBalanceMode.LAST_FROM_DATE:
+                    this.incrementBalances(balances, balance, mode);
+                    if (currentDateLabel !== balance.date) {
+                      await this.dumpBalances(balances);
+                    }
+                    currentDateLabel = balance.date;
+                    break;
+                }
               }
 
-              if (instantBalance.id === last.id) {
-                await this.dumpBalances(balances)
-                  .then(() => subscription.unsubscribe());
-              }
-
-              return instantBalance;
+              return;
             }),
           ).subscribe();
       });
+  }
+
+  private incrementBalances(balances: AssetBalances, balanceToAdd: DailyBalance, mode: ExtractDailyBalanceMode) {
+    if (!balances[balanceToAdd.asset]) {
+      balances[balanceToAdd.asset] = balanceToAdd;
+    } else {
+      balances[balanceToAdd.asset].amount = mode === ExtractDailyBalanceMode.FROM_BEGINING
+        ? balances[balanceToAdd.asset].amount.plus(balanceToAdd.amount)
+        : balances[balanceToAdd.asset].amount.minus(balanceToAdd.amount);
+      balances[balanceToAdd.asset].date = balanceToAdd.date;
+    }
+  }
+
+  private convertRawBalanceMutationToDailyBalance(o: any) {
+    const balance = new DailyBalance();
+    balance.id = o.BalanceMutation_id;
+    balance.accountId = o.BalanceMutation_accountId;
+    balance.asset = o.BalanceMutation_asset;
+    balance.amount = new BigNumber(o.BalanceMutation_amount).multipliedBy((o.BalanceMutation_type === 'credit' ? 1 : -1));
+    balance.date = (new Date(o.BalanceMutation_at)).toISOString().substr(0, 10);
+
+    return balance;
   }
 }

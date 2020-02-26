@@ -27,7 +27,7 @@ export class DailyBalance {
   amount: BigNumber;
 
   @Column({type: "date"})
-  date: Date;
+  date: string;
 
   @Column({ length: 24, default: '0'.repeat(10) })
   dateCursor: string;
