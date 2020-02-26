@@ -7,11 +7,12 @@ import {TypeOrmModule} from "@nestjs/typeorm";
 import {FetchEffectsMode, BalanceMutationExtractorService} from "./balance-mutation-extractor.service";
 import {StellarService} from "./stellar.service";
 import StellarSdk from "stellar-sdk";
-import {getRepository} from "typeorm";
 import {DailyBalance} from "./entities/daily-balance.entity";
 import {MyLoggerService} from "./my-logger.service";
 import {DailyBalanceExtractorService, ExtractDailyBalanceMode} from "./daily-balance-extractor.service";
 import {DailyBalanceService} from "./daily-balance.service";
+
+process.env.TZ = 'UTC';
 
 jest.setTimeout(1000000000);
 
