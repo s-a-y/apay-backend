@@ -4,7 +4,7 @@ import {HttpModule} from "@nestjs/common";
 import {ConfigModule, ConfigService} from "@nestjs/config";
 import configuration from "./config/configuration";
 import {TypeOrmModule} from "@nestjs/typeorm";
-import {FetchEffectsMode, BalanceMutationExtractorService} from "./balance-mutation-extractor.service";
+import {ExtractBalanceMutationMode, BalanceMutationExtractorService} from "./balance-mutation-extractor.service";
 import {StellarService} from "./stellar.service";
 import StellarSdk from "stellar-sdk";
 import {DailyBalance} from "./entities/daily-balance.entity";
@@ -71,11 +71,11 @@ describe('RatesService', () => {
       if (false) {
         await stellarTransactionService.extract({
           accountId: pubKey1,
-          mode: FetchEffectsMode.FROM_BEGINING,
+          mode: ExtractBalanceMutationMode.FROM_BEGINING,
         });
         //await stellarTransactionService.extract({
         //  accountId: pubKey2,
-        //  mode: FetchEffectsMode.FROM_BEGINING,
+        //  mode: ExtractBalanceMutationMode.FROM_BEGINING,
         //  //fromDate: new Date('2020-02-10'),
         //});
       }

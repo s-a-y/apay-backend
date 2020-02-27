@@ -17,7 +17,9 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "balance:import-mutations": "ts-node -r tsconfig-paths/register src/balance-import-mutations.ts",
+    "balance:generate-history": "ts-node -r tsconfig-paths/register src/balance-generate-history.ts"
   },
   "dependencies": {
     "@nestjs/common": "^6.7.2",
@@ -32,6 +34,7 @@
     "class-transformer": "^0.2.3",
     "class-validator": "^0.11.0",
     "fluent-logger": "^3.4.1",
+    "minimist": "^1.2.0",
     "pg": "^7.17.1",
     "pg-query-stream": "^3.0.2",
     "reflect-metadata": "^0.1.13",

@@ -10,6 +10,8 @@ import {RateHistoryService} from "./rate-history.service";
 import {RateHistory} from "./entities/rate-history.entity";
 import {DailyBalanceService} from "./daily-balance.service";
 import {DailyBalance} from "./entities/daily-balance.entity";
+import {DailyBalanceExtractorService} from "./daily-balance-extractor.service";
+import {BalanceMutationExtractorService} from "./balance-mutation-extractor.service";
 
 @Module({
   imports: [
@@ -26,8 +28,10 @@ import {DailyBalance} from "./entities/daily-balance.entity";
   ],
   controllers: [AppController],
   providers: [
+    BalanceMutationExtractorService,
     ConfigService,
     DailyBalanceService,
+    DailyBalanceExtractorService,
     RateHistoryService,
     RatesService,
     StellarService,

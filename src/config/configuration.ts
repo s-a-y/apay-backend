@@ -11,7 +11,7 @@ export default () => ({
     port: parseInt(process.env.TYPEORM_PORT, 10),
     logging: process.env.TYPEORM_LOGGING === 'true',
     entities: (process.env.TYPEORM_ENTITIES || 'dist/**/**.entity{.ts,.js}').split(';'),
-    migrationsRun: process.env.TYPEORM_MIGRATIONS_RUN === 'true',
+    migrationsRun: (process.env.TYPEORM_MIGRATIONS_RUN || 'true')=== 'true',
     synchronize: (process.env.TYPEORM_SYNCHRONIZE || 'true') === 'true',
     extra: process.env.TYPEORM_SOCKET ? {host: process.env.TYPEORM_SOCKET} : null,
   },

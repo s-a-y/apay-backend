@@ -9,14 +9,14 @@ import BigNumber from "bignumber.js";
 import {getRepository} from "typeorm";
 import {timeoutWith} from "rxjs/operators";
 
-export enum FetchEffectsMode {
+export enum ExtractBalanceMutationMode {
   FROM_BEGINING,
   LAST_FROM_DATE,
 }
 
 export interface ExtractBalanceMutationOptions {
   accountId: string,
-  mode: FetchEffectsMode,
+  mode: ExtractBalanceMutationMode,
   fromDate?: Date,
 }
 
@@ -34,7 +34,7 @@ export class BalanceMutationExtractorService {
     this.server = new StellarSdk.Server(this.configService.get('stellar.horizonUrl'));
   }
 
-  async extract({accountId, mode = FetchEffectsMode.FROM_BEGINING, fromDate}: ExtractBalanceMutationOptions) {
+  async extract({accountId, mode = ExtractBalanceMutationMode.FROM_BEGINING, fromDate}: ExtractBalanceMutationOptions) {
     const subject = new Subject<FetchedEffectRecord>();
     const observable = from(subject)
       .pipe(
@@ -56,9 +56,9 @@ export class BalanceMutationExtractorService {
           }
 
           switch (mode) {
-            case FetchEffectsMode.FROM_BEGINING:
+            case ExtractBalanceMutationMode.FROM_BEGINING:
               break;
-            case FetchEffectsMode.LAST_FROM_DATE:
+            case ExtractBalanceMutationMode.LAST_FROM_DATE:
               this.logger.log(value.created_at);
               if (new Date(value.created_at) < fromDate) {
                 subscription.unsubscribe();
@@ -149,9 +149,9 @@ export class BalanceMutationExtractorService {
 
   initEffectsSubject(
     subject: Subject<FetchedEffectRecord>,
-    {accountId, mode = FetchEffectsMode.FROM_BEGINING, fromDate}: ExtractBalanceMutationOptions,
+    {accountId, mode = ExtractBalanceMutationMode.FROM_BEGINING, fromDate}: ExtractBalanceMutationOptions,
   ) {
-    if (mode === FetchEffectsMode.LAST_FROM_DATE && !fromDate) {
+    if (mode === ExtractBalanceMutationMode.LAST_FROM_DATE && !fromDate) {
       throw new Error('fromDate is not defined!');
     }
     const builder = this.server.effects()
@@ -160,10 +160,10 @@ export class BalanceMutationExtractorService {
       .join('transactions');
 
     switch (mode) {
-      case FetchEffectsMode.FROM_BEGINING:
+      case ExtractBalanceMutationMode.FROM_BEGINING:
         builder.order("asc");
         break;
-      case FetchEffectsMode.LAST_FROM_DATE:
+      case ExtractBalanceMutationMode.LAST_FROM_DATE:
         builder.order("desc");
         break;
     }
