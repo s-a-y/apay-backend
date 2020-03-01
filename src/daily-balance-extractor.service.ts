@@ -172,7 +172,7 @@ class BalanceCounter {
 
   async dump() {
     const b = new DailyBalance();
-    b.date = this.date;
+    b.date = this.date || new Date().toISOString().substr(0, 10);
     b.asset = this.asset;
     b.amount = this.amountToDump;
     b.accountId = this.accountId;

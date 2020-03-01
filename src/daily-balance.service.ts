@@ -36,30 +36,36 @@ export class DailyBalanceService extends AbstractService<GetDailyBalancesDto, Da
       }
     }
 
-    builder.andWhere('daily_balance.asset = :value', {value: `${input.asset.code} ${input.asset.issuer}`});
+    if (input.accountId) {
+      builder.andWhere('daily_balance.accountId = :accountId', {accountId: input.accountId});
+    }
+
+    if (input.asset.code && input.asset.issuer) {
+      builder.andWhere('daily_balance.asset = :asset', {asset: `${input.asset.code} ${input.asset.issuer}`});
+    }
 
     if (input.createdAt) {
-      builder.andWhere('daily_balance.createdAt = :value', { value: input.createdAt });
+      builder.andWhere('daily_balance.createdAt = :createdAt', { createdAt: input.createdAt });
     }
 
     if (input.fromCreatedAt) {
-      builder.andWhere('daily_balance.createdAt >= :value', { value: input.fromCreatedAt });
+      builder.andWhere('daily_balance.createdAt >= :fromCreatedAt', { fromCreatedAt: input.fromCreatedAt });
     }
 
     if (input.toCreatedAt) {
-      builder.andWhere('daily_balance.createdAt <= :value', { value: input.toCreatedAt });
+      builder.andWhere('daily_balance.createdAt <= :toCreatedAt', { toCreatedAt: input.toCreatedAt });
     }
 
     if (input.date) {
-      builder.andWhere('daily_balance.date = :value', { value: input.date });
+      builder.andWhere('daily_balance.date = :date', { date: input.date });
     }
 
     if (input.fromDate) {
-      builder.andWhere('daily_balance.date >= :value', { value: input.fromDate });
+      builder.andWhere('daily_balance.date >= :fromDate', { fromDate: input.fromDate });
     }
 
     if (input.toDate) {
-      builder.andWhere('daily_balance.date <= :value', { value: input.toDate });
+      builder.andWhere('daily_balance.date <= :toDate', { toDate: input.toDate });
     }
 
     if (input.id) {
