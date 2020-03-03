@@ -18,6 +18,13 @@ export enum SupportedCurrency {
 /**
  * Common enums
  */
+export enum JobOperation {
+    remove = 'remove',
+    retry = 'retry',
+    discard = 'discard',
+    promote = 'promote',
+}
+
 export enum JobState {
     waiting = 'waiting',
     active = 'active',

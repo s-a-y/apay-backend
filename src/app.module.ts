@@ -16,6 +16,7 @@ import {BullModule} from "@nestjs/bull";
 import {BalanceMutationsService} from "./balance-mutations.service";
 import {BalanceMutation} from "./entities/balance-mutation.entity";
 import {AdminController} from "./admin.controller";
+import {JobQueueProcessor} from "./job-queue.processor";
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import {AdminController} from "./admin.controller";
     ConfigService,
     DailyBalanceService,
     DailyBalanceExtractorService,
+    JobQueueProcessor,
     RateHistoryService,
     RatesService,
     StellarService,
