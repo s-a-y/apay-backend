@@ -1,5 +1,5 @@
 import BigNumber from 'bignumber.js';
-import {OrderOption} from "./app.enums";
+import {BalanceMutationType, OrderOption} from "./app.enums";
 
 export interface Balance {
   id: string;
@@ -8,6 +8,17 @@ export interface Balance {
     asset: Asset;
     amount: BigNumber;
   }]
+}
+
+export interface BalanceMutation {
+  id: string,
+  cursor: string,
+  accountId: string,
+  asset: Asset,
+  type: BalanceMutationType,
+  amount: string,
+  at: Date,
+  createdAt: Date,
 }
 
 export interface DailyBalance {

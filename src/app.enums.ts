@@ -18,6 +18,13 @@ export enum SupportedCurrency {
 /**
  * Common enums
  */
+export enum JobState {
+    waiting = 'waiting',
+    active = 'active',
+    delayed = 'delayed',
+    completed = 'completed',
+    failed = 'failed',
+}
 export enum OrderOption {
     ASC = "ASC",
     DESC = "DESC"

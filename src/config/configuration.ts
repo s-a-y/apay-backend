@@ -27,5 +27,9 @@ export default () => ({
   stellar: {
     horizonUrl: process.env.STELLAR_HORIZON_URL || 'https://horizon-testnet.stellar.org',
     networkPassphrase: process.env.STELLAR_NETWORK_PASSPHRASE || StellarSdk.Networks.TESTNET,
+  },
+  redis: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: +process.env.REDIS_PORT || 6379,
   }
 });

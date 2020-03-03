@@ -18,10 +18,13 @@ export interface ExtractBalanceMutationOptions {
   accountId: string,
   mode: ExtractBalanceMutationMode,
   fromDate?: Date,
+  cursor?: string,
+  jobId?: string,
 }
 
 type FetchedEffectRecord = ServerApi.EffectRecord | null;
 const COMPLETED = null;
+const MAX_COUNTER = 10;
 
 @Injectable()
 export class BalanceMutationExtractorService {
@@ -34,14 +37,21 @@ export class BalanceMutationExtractorService {
     this.server = new StellarSdk.Server(this.configService.get('stellar.horizonUrl'));
   }
 
-  async extract({accountId, mode = ExtractBalanceMutationMode.FROM_BEGINING, fromDate}: ExtractBalanceMutationOptions) {
+  async extract({
+    accountId,
+    mode = ExtractBalanceMutationMode.FROM_BEGINING,
+    fromDate,
+    cursor,
+    jobId,
+  }: ExtractBalanceMutationOptions) {
+    let counter = 0;
     const subject = new Subject<FetchedEffectRecord>();
     const observable = from(subject)
       .pipe(
         timeoutWith(5000, of(COMPLETED))
       );
 
-    const closeStream = this.initEffectsSubject(subject, {accountId, mode, fromDate});
+    const closeStream = this.initEffectsSubject(subject, {accountId, mode, fromDate, cursor, jobId});
 
     return new Promise((resolve, reject) => {
       const subscription = observable.subscribe(
@@ -53,6 +63,11 @@ export class BalanceMutationExtractorService {
             closeStream();
             resolve();
             return;
+          }
+
+          if (!(counter++ % MAX_COUNTER)) {
+            counter = 0;
+
           }
 
           switch (mode) {
@@ -68,7 +83,6 @@ export class BalanceMutationExtractorService {
               }
               break;
           }
-          this.logger.log(`%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ${value.created_at}`);
           switch (value.type) {
             case 'account_credited':
               balanceMutation = new BalanceMutation();
@@ -136,7 +150,6 @@ export class BalanceMutationExtractorService {
   }
 
   async saveBalanceMutationSafely(balanceMutation: BalanceMutation) {
-    this.logger.log(`%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ${balanceMutation.type} ${balanceMutation.asset.substr(0, 3)} ${balanceMutation.amount}`);
     return getRepository(BalanceMutation).save(balanceMutation)
       .catch((error) => {
         if (error.message.includes('duplicate key value violates unique constraint "UQ_accountId_type_externalId')) {
@@ -149,7 +162,7 @@ export class BalanceMutationExtractorService {
 
   initEffectsSubject(
     subject: Subject<FetchedEffectRecord>,
-    {accountId, mode = ExtractBalanceMutationMode.FROM_BEGINING, fromDate}: ExtractBalanceMutationOptions,
+    {accountId, mode = ExtractBalanceMutationMode.FROM_BEGINING, fromDate, cursor}: ExtractBalanceMutationOptions,
   ) {
     if (mode === ExtractBalanceMutationMode.LAST_FROM_DATE && !fromDate) {
       throw new Error('fromDate is not defined!');
@@ -158,6 +171,10 @@ export class BalanceMutationExtractorService {
       .forAccount(accountId)
       .order("asc")
       .join('transactions');
+
+    if (cursor) {
+      builder.cursor(cursor);
+    }
 
     switch (mode) {
       case ExtractBalanceMutationMode.FROM_BEGINING:

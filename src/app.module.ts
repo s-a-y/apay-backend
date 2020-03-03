@@ -12,6 +12,10 @@ import {DailyBalanceService} from "./daily-balance.service";
 import {DailyBalance} from "./entities/daily-balance.entity";
 import {DailyBalanceExtractorService} from "./daily-balance-extractor.service";
 import {BalanceMutationExtractorService} from "./balance-mutation-extractor.service";
+import {BullModule} from "@nestjs/bull";
+import {BalanceMutationsService} from "./balance-mutations.service";
+import {BalanceMutation} from "./entities/balance-mutation.entity";
+import {AdminController} from "./admin.controller";
 
 @Module({
   imports: [
@@ -24,11 +28,26 @@ import {BalanceMutationExtractorService} from "./balance-mutation-extractor.serv
       useFactory: (config: ConfigService) => config.get('database'),
       inject: [ConfigService],
     }),
-    TypeOrmModule.forFeature([DailyBalance, RatesLog, RateHistory]),
+    TypeOrmModule.forFeature([
+      BalanceMutation,
+      DailyBalance,
+      RatesLog,
+      RateHistory,
+    ]),
+    BullModule.registerQueueAsync({
+      name: 'JobQueue',
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => config.get('redis'),
+      imports: [ConfigService],
+    }),
   ],
-  controllers: [AppController],
+  controllers: [
+    AdminController,
+    AppController,
+  ],
   providers: [
     BalanceMutationExtractorService,
+    BalanceMutationsService,
     ConfigService,
     DailyBalanceService,
     DailyBalanceExtractorService,

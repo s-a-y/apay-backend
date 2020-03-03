@@ -10,7 +10,7 @@ export class RatesLog {
   @Generated('increment')
   cursor: number;
 
-  @Column({ type: 'json' })
+  @Column({ type: 'json', default: []})
   data: RatesLogData[];
 
   @Column({type: "timestamp"})

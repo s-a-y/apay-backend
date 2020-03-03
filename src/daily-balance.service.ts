@@ -40,7 +40,7 @@ export class DailyBalanceService extends AbstractService<GetDailyBalancesDto, Da
       builder.andWhere('daily_balance.accountId = :accountId', {accountId: input.accountId});
     }
 
-    if (input.asset.code && input.asset.issuer) {
+    if (input.asset && input.asset.code && input.asset.issuer) {
       builder.andWhere('daily_balance.asset = :asset', {asset: `${input.asset.code} ${input.asset.issuer}`});
     }
 
