@@ -11,6 +11,9 @@ export class GetBalanceMutationsDto implements GetEntitiesInputInterface {
   @IsOptional()
   cursor: string;
 
+  @IsOptional()
+  externalCursor: string;
+
   @IsNotEmpty()
   accountId: string;
 

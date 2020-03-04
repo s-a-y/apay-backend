@@ -4,14 +4,15 @@ import {MyLoggerService} from "./my-logger.service";
 import {ConfigService} from "@nestjs/config";
 import {Injectable} from "@nestjs/common";
 import {BalanceMutation} from "./entities/balance-mutation.entity";
-import {BalanceMutationType} from "./app.enums";
+import {BalanceMutationType, OrderOption} from "./app.enums";
 import BigNumber from "bignumber.js";
 import {timeoutWith} from "rxjs/operators";
 import {BalanceMutationsService} from "./balance-mutations.service";
+import {GetBalanceMutationsDto} from "./dto/get-balance-mutations.dto";
 
 export enum ExtractBalanceMutationMode {
-  FROM_BEGINING,
-  LAST_FROM_DATE,
+  FROM_HEAD,
+  FROM_TAIL,
 }
 
 export interface ExtractBalanceMutationOptions {
@@ -20,6 +21,7 @@ export interface ExtractBalanceMutationOptions {
   fromDate?: Date,
   cursor?: string,
   jobId?: string,
+  reset?: boolean,
 }
 
 type FetchedEffectRecord = ServerApi.EffectRecord | null;
@@ -39,12 +41,12 @@ export class BalanceMutationExtractorService {
 
   async extract({
     accountId,
-    mode = ExtractBalanceMutationMode.FROM_BEGINING,
+    mode = ExtractBalanceMutationMode.FROM_HEAD,
     fromDate,
     cursor,
     jobId,
+    reset = false,
   }: ExtractBalanceMutationOptions) {
-    let counter = 0;
     const subject = new Subject<FetchedEffectRecord>();
     const observable = from(subject)
       .pipe(
@@ -52,6 +54,23 @@ export class BalanceMutationExtractorService {
       );
 
     this.logger.log('extract(): started');
+
+    if (reset) {
+      cursor = null;
+      this.logger.log(`extract(): cursor set to null`);
+    } else if (cursor) {
+      this.logger.log(`extract(): used a cursor from args ${cursor}`);
+    } else {
+      const lastMutation = await this.balanceMutationsService.getItemsBuilder({
+        accountId, order: {field: 'cursor', order: OrderOption.DESC}
+      } as GetBalanceMutationsDto).getOne();
+      cursor = lastMutation ? lastMutation.externalCursor : null;
+      if (cursor) {
+        this.logger.log(`extract(): used a cursor stored in the last mutation found in the db  ${cursor} (at: ${lastMutation.at})`);
+      } else {
+        this.logger.log(`extract(): no cursor found`);
+      }
+    }
 
     const closeStream = this.initEffectsSubject(subject, {accountId, mode, fromDate, cursor, jobId});
 
@@ -69,9 +88,9 @@ export class BalanceMutationExtractorService {
           }
 
           switch (mode) {
-            case ExtractBalanceMutationMode.FROM_BEGINING:
+            case ExtractBalanceMutationMode.FROM_HEAD:
               break;
-            case ExtractBalanceMutationMode.LAST_FROM_DATE:
+            case ExtractBalanceMutationMode.FROM_TAIL:
               if (new Date(value.created_at) < fromDate) {
                 this.logger.log('extract(): completed');
                 subscription.unsubscribe();
@@ -85,6 +104,7 @@ export class BalanceMutationExtractorService {
             case 'account_credited':
               balanceMutation = new BalanceMutation();
               balanceMutation.externalId = value.id;
+              balanceMutation.externalCursor = value.paging_token;
               balanceMutation.accountId = value.account;
               balanceMutation.at = new Date(value.created_at);
               balanceMutation.type = BalanceMutationType.credit;
@@ -95,6 +115,7 @@ export class BalanceMutationExtractorService {
             case 'account_debited':
               balanceMutation = new BalanceMutation();
               balanceMutation.externalId = value.id;
+              balanceMutation.externalCursor = value.paging_token;
               balanceMutation.accountId = value.account;
               balanceMutation.at = new Date(value.created_at);
               balanceMutation.type = BalanceMutationType.debit;
@@ -105,6 +126,7 @@ export class BalanceMutationExtractorService {
             case 'trade':
               balanceMutation = new BalanceMutation();
               balanceMutation.externalId = value.id;
+              balanceMutation.externalCursor = value.paging_token;
               balanceMutation.accountId = value.account;
               balanceMutation.at = new Date(value.created_at);
               balanceMutation.type = BalanceMutationType.debit;
@@ -114,6 +136,7 @@ export class BalanceMutationExtractorService {
 
               balanceMutation = new BalanceMutation();
               balanceMutation.externalId = value.id;
+              balanceMutation.externalCursor = value.paging_token;
               balanceMutation.accountId = value.account;
               balanceMutation.at = new Date(value.created_at);
               balanceMutation.type = BalanceMutationType.credit;
@@ -124,6 +147,7 @@ export class BalanceMutationExtractorService {
             case 'account_created':
               balanceMutation = new BalanceMutation();
               balanceMutation.externalId = value.id;
+              balanceMutation.externalCursor = value.paging_token;
               balanceMutation.accountId = value.account;
               balanceMutation.at = new Date(value.created_at);
               balanceMutation.type = BalanceMutationType.credit;
@@ -149,9 +173,9 @@ export class BalanceMutationExtractorService {
 
   initEffectsSubject(
     subject: Subject<FetchedEffectRecord>,
-    {accountId, mode = ExtractBalanceMutationMode.FROM_BEGINING, fromDate, cursor}: ExtractBalanceMutationOptions,
+    {accountId, mode = ExtractBalanceMutationMode.FROM_HEAD, fromDate, cursor}: ExtractBalanceMutationOptions,
   ) {
-    if (mode === ExtractBalanceMutationMode.LAST_FROM_DATE && !fromDate) {
+    if (mode === ExtractBalanceMutationMode.FROM_TAIL && !fromDate) {
       throw new Error('fromDate is not defined!');
     }
     const builder = this.server.effects()
@@ -164,10 +188,10 @@ export class BalanceMutationExtractorService {
     }
 
     switch (mode) {
-      case ExtractBalanceMutationMode.FROM_BEGINING:
+      case ExtractBalanceMutationMode.FROM_HEAD:
         builder.order("asc");
         break;
-      case ExtractBalanceMutationMode.LAST_FROM_DATE:
+      case ExtractBalanceMutationMode.FROM_TAIL:
         builder.order("desc");
         break;
     }

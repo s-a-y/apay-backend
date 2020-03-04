@@ -19,6 +19,9 @@ export class BalanceMutation {
   @Column({nullable: false})
   externalId: string;
 
+  @Column({nullable: false})
+  externalCursor: string;
+
   @Column()
   asset: string;
 

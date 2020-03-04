@@ -19,7 +19,7 @@ export class BalanceMutationsService extends AbstractService<GetBalanceMutations
     super();
   }
 
-  getItemsBuilder(input: GetBalanceMutationsDto, repository?: Repository<BalanceMutation>): SelectQueryBuilder<any> {
+  getItemsBuilder(input: GetBalanceMutationsDto, repository?: Repository<BalanceMutation>): SelectQueryBuilder<BalanceMutation> {
     const builder = (repository || getRepository(BalanceMutation)).createQueryBuilder('balance_mutation').where('true');
     const order = input.order || {field: 'cursor', order: OrderOption.ASC};
 
@@ -39,6 +39,10 @@ export class BalanceMutationsService extends AbstractService<GetBalanceMutations
 
     if (input.type) {
       builder.andWhere('balance_mutation.type = :type', {type: input.type});
+    }
+
+    if (input.externalCursor) {
+      builder.andWhere('balance_mutation.externalCursor = :externalCursor', {externalCursor: input.externalCursor});
     }
 
     if (input.accountId) {

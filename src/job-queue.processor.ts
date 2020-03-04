@@ -74,7 +74,7 @@ export class JobQueueProcessor {
   async extractBalanceMutations(job: Job<SyncDailyBalancesDto>) {
     await this.balanceMutationExtractorService.extract({
       fromDate: new Date(job.data.toDate),
-      mode: ExtractBalanceMutationMode.LAST_FROM_DATE,
+      mode: ExtractBalanceMutationMode.FROM_TAIL,
       accountId: job.data.accountId,
     });
     return {}

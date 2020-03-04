@@ -27,10 +27,10 @@ if (!account) {
 
 switch (argv['mode']) {
   case 'from-beginning':
-    mode = ExtractBalanceMutationMode.FROM_BEGINING;
+    mode = ExtractBalanceMutationMode.FROM_HEAD;
     break;
   case 'from-end':
-    mode = ExtractBalanceMutationMode.LAST_FROM_DATE;
+    mode = ExtractBalanceMutationMode.FROM_TAIL;
     if (!argv['to-date'] || !Date.parse(argv['to-date'])) {
       error('bad or empty to-date');
     }
