@@ -34,6 +34,8 @@ export class DailyBalanceExtractorService {
   }
 
   async extract({accountId, mode, fromDate}: ExtractDailyBalanceOptions) {
+    this.logger.log({accountId, mode, fromDate, log: 'extract(): started'});
+
     const balancesCollector = new BalanceCollector(mode, this.dailyBalanceService);
 
     const queryBuilder = getRepository(BalanceMutation)
@@ -81,6 +83,7 @@ export class DailyBalanceExtractorService {
                     await balancesCollector.dump();
                     break;
                 }
+                this.logger.log('extract(): completed');
                 subscription.unsubscribe();
               } else {
                 await balancesCollector.add(this.convertRawBalanceMutationToDailyBalance(o));

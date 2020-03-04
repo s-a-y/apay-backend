@@ -77,4 +77,14 @@ export class BalanceMutationsService extends AbstractService<GetBalanceMutations
       createdAt: mutation.createdAt,
     } as BalanceMutationInterface);
   }
+
+  async upsertBalanceMutation(mutation: BalanceMutation) {
+    return getRepository(BalanceMutation)
+      .createQueryBuilder()
+      .insert()
+      .into(BalanceMutation)
+      .values(mutation)
+      .onConflict(`ON CONSTRAINT "UQ_accountId_type_externalId" DO NOTHING`)
+      .execute();
+  }
 }

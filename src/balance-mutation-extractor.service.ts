@@ -6,8 +6,8 @@ import {Injectable} from "@nestjs/common";
 import {BalanceMutation} from "./entities/balance-mutation.entity";
 import {BalanceMutationType} from "./app.enums";
 import BigNumber from "bignumber.js";
-import {getRepository} from "typeorm";
 import {timeoutWith} from "rxjs/operators";
+import {BalanceMutationsService} from "./balance-mutations.service";
 
 export enum ExtractBalanceMutationMode {
   FROM_BEGINING,
@@ -24,7 +24,6 @@ export interface ExtractBalanceMutationOptions {
 
 type FetchedEffectRecord = ServerApi.EffectRecord | null;
 const COMPLETED = null;
-const MAX_COUNTER = 10;
 
 @Injectable()
 export class BalanceMutationExtractorService {
@@ -32,6 +31,7 @@ export class BalanceMutationExtractorService {
   private server;
   constructor(
     private readonly configService: ConfigService,
+    private readonly balanceMutationsService: BalanceMutationsService,
   ) {
 
     this.server = new StellarSdk.Server(this.configService.get('stellar.horizonUrl'));
@@ -51,6 +51,8 @@ export class BalanceMutationExtractorService {
         timeoutWith(5000, of(COMPLETED))
       );
 
+    this.logger.log('extract(): started');
+
     const closeStream = this.initEffectsSubject(subject, {accountId, mode, fromDate, cursor, jobId});
 
     return new Promise((resolve, reject) => {
@@ -59,23 +61,19 @@ export class BalanceMutationExtractorService {
           let balanceMutation: BalanceMutation;
 
           if (value === COMPLETED) {
+            this.logger.log('extract(): completed (timeout)');
             subscription.unsubscribe();
             closeStream();
             resolve();
             return;
           }
 
-          if (!(counter++ % MAX_COUNTER)) {
-            counter = 0;
-
-          }
-
           switch (mode) {
             case ExtractBalanceMutationMode.FROM_BEGINING:
               break;
             case ExtractBalanceMutationMode.LAST_FROM_DATE:
-              this.logger.log(value.created_at);
               if (new Date(value.created_at) < fromDate) {
+                this.logger.log('extract(): completed');
                 subscription.unsubscribe();
                 closeStream();
                 resolve();
@@ -92,7 +90,7 @@ export class BalanceMutationExtractorService {
               balanceMutation.type = BalanceMutationType.credit;
               balanceMutation.asset = value.asset_type === 'native' ? 'native' : `${value.asset_code} ${value.asset_issuer}`;
               balanceMutation.amount = new BigNumber(value.amount);
-              await this.saveBalanceMutationSafely(balanceMutation);
+              await this.balanceMutationsService.upsertBalanceMutation(balanceMutation);
               break;
             case 'account_debited':
               balanceMutation = new BalanceMutation();
@@ -102,7 +100,7 @@ export class BalanceMutationExtractorService {
               balanceMutation.type = BalanceMutationType.debit;
               balanceMutation.asset = value.asset_type === 'native' ? 'native' : `${value.asset_code} ${value.asset_issuer}`;
               balanceMutation.amount = new BigNumber(value.amount);
-              await this.saveBalanceMutationSafely(balanceMutation);
+              await this.balanceMutationsService.upsertBalanceMutation(balanceMutation);
               break;
             case 'trade':
               balanceMutation = new BalanceMutation();
@@ -112,7 +110,7 @@ export class BalanceMutationExtractorService {
               balanceMutation.type = BalanceMutationType.debit;
               balanceMutation.asset = value.sold_asset_type === 'native' ? 'native' : `${value.sold_asset_code} ${value.sold_asset_issuer}`;
               balanceMutation.amount = new BigNumber(value.sold_amount);
-              await this.saveBalanceMutationSafely(balanceMutation);
+              await this.balanceMutationsService.upsertBalanceMutation(balanceMutation);
 
               balanceMutation = new BalanceMutation();
               balanceMutation.externalId = value.id;
@@ -121,7 +119,7 @@ export class BalanceMutationExtractorService {
               balanceMutation.type = BalanceMutationType.credit;
               balanceMutation.asset = value.bought_asset_type === 'native' ? 'native' : `${value.bought_asset_code} ${value.bought_asset_issuer}`;
               balanceMutation.amount = new BigNumber(value.bought_amount);
-              await this.saveBalanceMutationSafely(balanceMutation);
+              await this.balanceMutationsService.upsertBalanceMutation(balanceMutation);
               break;
             case 'account_created':
               balanceMutation = new BalanceMutation();
@@ -131,7 +129,7 @@ export class BalanceMutationExtractorService {
               balanceMutation.type = BalanceMutationType.credit;
               balanceMutation.asset = 'native';
               balanceMutation.amount = new BigNumber(value.starting_balance);
-              await this.saveBalanceMutationSafely(balanceMutation);
+              await this.balanceMutationsService.upsertBalanceMutation(balanceMutation);
               break;
             default:
               this.logger.warn({message: 'Effect type is not supported', type: value.type});
@@ -147,17 +145,6 @@ export class BalanceMutationExtractorService {
         }
       );
     });
-  }
-
-  async saveBalanceMutationSafely(balanceMutation: BalanceMutation) {
-    return getRepository(BalanceMutation).save(balanceMutation)
-      .catch((error) => {
-        if (error.message.includes('duplicate key value violates unique constraint "UQ_accountId_type_externalId')) {
-          console.log('Already saved');
-        } else {
-          throw error;
-        }
-      });
   }
 
   initEffectsSubject(
