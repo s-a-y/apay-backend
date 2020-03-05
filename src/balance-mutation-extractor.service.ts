@@ -18,7 +18,7 @@ export enum ExtractBalanceMutationMode {
 export interface ExtractBalanceMutationOptions {
   accountId: string,
   mode: ExtractBalanceMutationMode,
-  fromDate?: Date,
+  toDate?: Date,
   cursor?: string,
   jobId?: string,
   reset?: boolean,
@@ -42,7 +42,7 @@ export class BalanceMutationExtractorService {
   async extract({
     accountId,
     mode = ExtractBalanceMutationMode.FROM_HEAD,
-    fromDate,
+    toDate,
     cursor,
     jobId,
     reset = false,
@@ -72,7 +72,7 @@ export class BalanceMutationExtractorService {
       }
     }
 
-    const closeStream = this.initEffectsSubject(subject, {accountId, mode, fromDate, cursor, jobId});
+    const closeStream = this.initEffectsSubject(subject, {accountId, mode, toDate, cursor, jobId});
 
     return new Promise((resolve, reject) => {
       const subscription = observable.subscribe(
@@ -91,7 +91,7 @@ export class BalanceMutationExtractorService {
             case ExtractBalanceMutationMode.FROM_HEAD:
               break;
             case ExtractBalanceMutationMode.FROM_TAIL:
-              if (new Date(value.created_at) < fromDate) {
+              if (new Date(value.created_at) < toDate) {
                 this.logger.log('extract(): completed');
                 subscription.unsubscribe();
                 closeStream();
@@ -173,10 +173,10 @@ export class BalanceMutationExtractorService {
 
   initEffectsSubject(
     subject: Subject<FetchedEffectRecord>,
-    {accountId, mode = ExtractBalanceMutationMode.FROM_HEAD, fromDate, cursor}: ExtractBalanceMutationOptions,
+    {accountId, mode = ExtractBalanceMutationMode.FROM_HEAD, toDate, cursor}: ExtractBalanceMutationOptions,
   ) {
-    if (mode === ExtractBalanceMutationMode.FROM_TAIL && !fromDate) {
-      throw new Error('fromDate is not defined!');
+    if (mode === ExtractBalanceMutationMode.FROM_TAIL && !toDate) {
+      throw new Error('toDate is not defined!');
     }
     const builder = this.server.effects()
       .forAccount(accountId)

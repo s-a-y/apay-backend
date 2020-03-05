@@ -11,14 +11,14 @@ import {StellarService} from "./stellar.service";
 import {OrderOption} from "./app.enums";
 
 export enum ExtractDailyBalanceMode {
-  FROM_BEGINING,
-  LAST_FROM_DATE,
+  FROM_HEAD,
+  FROM_TAIL,
 }
 
 export interface ExtractDailyBalanceOptions {
   accountId: string,
   mode: ExtractDailyBalanceMode,
-  fromDate?: Date,
+  toDate?: Date,
 }
 
 const COMPLETED = null;
@@ -33,8 +33,8 @@ export class DailyBalanceExtractorService {
   ) {
   }
 
-  async extract({accountId, mode, fromDate}: ExtractDailyBalanceOptions) {
-    this.logger.log({accountId, mode, fromDate, log: 'extract(): started'});
+  async extract({accountId, mode, toDate}: ExtractDailyBalanceOptions) {
+    this.logger.log({accountId, mode, toDate, log: 'extract(): started'});
 
     const balancesCollector = new BalanceCollector(mode, this.dailyBalanceService);
 
@@ -43,16 +43,16 @@ export class DailyBalanceExtractorService {
       .where('BalanceMutation.accountId = :id', {id: accountId});
 
     switch (mode) {
-      case ExtractDailyBalanceMode.FROM_BEGINING:
+      case ExtractDailyBalanceMode.FROM_HEAD:
         queryBuilder.orderBy('BalanceMutation.at', OrderOption.ASC);
         break;
-      case ExtractDailyBalanceMode.LAST_FROM_DATE:
-        if (!fromDate) {
-          throw new Error('fromDate is not defined!');
+      case ExtractDailyBalanceMode.FROM_TAIL:
+        if (!toDate) {
+          throw new Error('toDate is not defined!');
         }
 
         queryBuilder
-          .andWhere('BalanceMutation.at >= :value', {value: fromDate})
+          .andWhere('BalanceMutation.at >= :value', {value: toDate})
           .orderBy('BalanceMutation.at', OrderOption.DESC);
 
         (await this.stellarService.fetchBalances(accountId)).forEach((line) => {
@@ -76,10 +76,10 @@ export class DailyBalanceExtractorService {
             concatMap(async (o: any) => {
               if (o === COMPLETED) {
                 switch (mode) {
-                  case ExtractDailyBalanceMode.FROM_BEGINING:
+                  case ExtractDailyBalanceMode.FROM_HEAD:
                     await balancesCollector.dump();
                     break;
-                  case ExtractDailyBalanceMode.LAST_FROM_DATE:
+                  case ExtractDailyBalanceMode.FROM_TAIL:
                     await balancesCollector.dump();
                     break;
                 }
@@ -163,12 +163,12 @@ class BalanceCounter {
   }
 
   private increment(balance: DailyBalance) {
-    this.amount = this.mode === ExtractDailyBalanceMode.FROM_BEGINING
+    this.amount = this.mode === ExtractDailyBalanceMode.FROM_HEAD
       ? this.amount.plus(balance.amount)
       : this.amount.minus(balance.amount);
     this.date = balance.date;
     this.amountToDump = this.amountToDump || this.amount;
-    this.amountToDump = this.mode === ExtractDailyBalanceMode.FROM_BEGINING
+    this.amountToDump = this.mode === ExtractDailyBalanceMode.FROM_HEAD
       ? this.amount
       : this.amountToDump;
   }

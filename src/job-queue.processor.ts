@@ -73,7 +73,7 @@ export class JobQueueProcessor {
   @Process('extractBalanceMutations')
   async extractBalanceMutations(job: Job<SyncDailyBalancesDto>) {
     await this.balanceMutationExtractorService.extract({
-      fromDate: new Date(job.data.toDate),
+      toDate: new Date(job.data.toDate),
       mode: ExtractBalanceMutationMode.FROM_TAIL,
       accountId: job.data.accountId,
     });
@@ -83,8 +83,8 @@ export class JobQueueProcessor {
   @Process('extractDailyBalances')
   async extractDailyBalances(job: Job<SyncDailyBalancesDto>) {
     await this.dailyBalanceExtractorService.extract({
-      fromDate: job.data.toDate,
-      mode: ExtractDailyBalanceMode.LAST_FROM_DATE,
+      toDate: job.data.toDate,
+      mode: ExtractDailyBalanceMode.FROM_TAIL,
       accountId: job.data.accountId,
     });
     return {}

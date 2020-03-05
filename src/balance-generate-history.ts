@@ -18,7 +18,7 @@ function error(message) {
 const argv = minimist(process.argv.slice(2));
 
 let mode;
-let fromDate;
+let toDate;
 const account = argv['account'];
 
 if (!account) {
@@ -27,14 +27,14 @@ if (!account) {
 
 switch (argv['mode']) {
   case 'from-beginning':
-    mode = ExtractDailyBalanceMode.FROM_BEGINING;
+    mode = ExtractDailyBalanceMode.FROM_HEAD;
     break;
   case 'from-end':
-    mode = ExtractDailyBalanceMode.LAST_FROM_DATE;
+    mode = ExtractDailyBalanceMode.FROM_TAIL;
     if (!argv['to-date'] || !Date.parse(argv['to-date'])) {
       error('bad or empty to-date');
     }
-    fromDate = new Date(argv['to-date']);
+    toDate = new Date(argv['to-date']);
     break;
   default:
     error('Bad mode');
@@ -46,8 +46,8 @@ async function bootstrap() {
   const extractor = app.get<DailyBalanceExtractorService>(DailyBalanceExtractorService);
 
   await extractor.extract({
-    fromDate,
     mode,
+    toDate,
     accountId: account,
   });
 }

@@ -18,7 +18,7 @@ function error(message) {
 const argv = minimist(process.argv.slice(2));
 
 let mode;
-let fromDate;
+let toDate;
 const account = argv['account'];
 
 if (!account) {
@@ -34,7 +34,7 @@ switch (argv['mode']) {
     if (!argv['to-date'] || !Date.parse(argv['to-date'])) {
       error('bad or empty to-date');
     }
-    fromDate = new Date(argv['to-date']);
+    toDate = new Date(argv['to-date']);
     break;
   default:
     error('Bad mode');
@@ -46,8 +46,8 @@ async function bootstrap() {
   const extractor = app.get<BalanceMutationExtractorService>(BalanceMutationExtractorService);
 
   await extractor.extract({
-    fromDate,
     mode,
+    toDate,
     accountId: account,
   });
 }
