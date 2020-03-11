@@ -102,7 +102,6 @@ export class DailyBalanceExtractorService {
   async fetchInitialDailyBalances(accountId: string) {
     const earlierBalances = await this.fetchEarlierDailyBalances(accountId);
     return (await this.stellarService.fetchBalances(accountId))
-      .filter(line => line.asset.includes('BONUS'))
       .map((line) => {
         const balance = new DailyBalance();
         balance.date = (new Date()).toISOString().substr(0, 10);
