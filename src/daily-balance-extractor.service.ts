@@ -19,6 +19,7 @@ export interface ExtractDailyBalanceOptions {
   accountId: string,
   mode: ExtractDailyBalanceMode,
   toDate?: Date,
+  reset?: boolean,
 }
 
 const COMPLETED = null;
@@ -35,6 +36,8 @@ export class DailyBalanceExtractorService {
 
   async extract({accountId, mode, toDate}: ExtractDailyBalanceOptions) {
     this.logger.log({accountId, mode, toDate, log: 'extract(): started'});
+
+    this.logger.log('extract(): started');
 
     const balancesCollector = new BalanceCollector(mode, this.dailyBalanceService);
 
@@ -55,14 +58,8 @@ export class DailyBalanceExtractorService {
           .andWhere('BalanceMutation.at >= :value', {value: toDate})
           .orderBy('BalanceMutation.at', OrderOption.DESC);
 
-        (await this.stellarService.fetchBalances(accountId)).forEach((line) => {
-          const balance = new DailyBalance();
-          balance.date = (new Date()).toISOString().substr(0, 10);
-          balance.amount = line.amount;
-          balance.asset = line.asset;
-          balance.accountId = accountId;
-          balancesCollector.init(balance);
-        });
+        (await this.fetchInitialDailyBalances(accountId))
+          .forEach(balance => balancesCollector.init(balance));
 
         break;
     }
@@ -86,13 +83,59 @@ export class DailyBalanceExtractorService {
                 this.logger.log('extract(): completed');
                 subscription.unsubscribe();
               } else {
-                await balancesCollector.add(this.convertRawBalanceMutationToDailyBalance(o));
+                const dailyBalance = this.convertRawBalanceMutationToDailyBalance(o);
+                await balancesCollector.add(dailyBalance);
               }
 
               return;
             }),
           ).subscribe();
       });
+  }
+
+  /**
+   * Fetch array of oldest entries for each asset from DailyBalances.
+   * If some entries do not exist replace them with ones composed of current stellar balances
+   *
+   * @param accountId
+   */
+  async fetchInitialDailyBalances(accountId: string) {
+    const earlierBalances = await this.fetchEarlierDailyBalances(accountId);
+    return (await this.stellarService.fetchBalances(accountId))
+      .filter(line => line.asset.includes('BONUS'))
+      .map((line) => {
+        const balance = new DailyBalance();
+        balance.date = (new Date()).toISOString().substr(0, 10);
+        balance.amount = line.amount;
+        balance.asset = line.asset;
+        balance.accountId = accountId;
+        return balance;
+      })
+      .map((currentBalance) => {
+        const found = earlierBalances.filter(v => v.asset === currentBalance.asset).pop();
+        return found ? found : currentBalance;
+      });
+  }
+
+  /**
+   * Fetch array of oldest entries for each asset from DailyBalances
+   *
+   * @param accountId
+   */
+  async fetchEarlierDailyBalances(accountId: string) {
+    return Promise.all(
+      (await getRepository(DailyBalance)
+        .createQueryBuilder('DailyBalance')
+        .select('DISTINCT "DailyBalance"."asset"')
+        .where('DailyBalance.accountId = :accountId', {accountId})
+        .getRawMany()
+      ).map((value) => getRepository(DailyBalance)
+        .createQueryBuilder('DailyBalance')
+        .where('DailyBalance.accountId = :accountId and asset = :asset', {accountId, asset: value.asset})
+        .orderBy('DailyBalance.cursor', "DESC")
+        .getOne()
+      )
+    )
   }
 
   private convertRawBalanceMutationToDailyBalance(o: any) {
@@ -147,19 +190,18 @@ class BalanceCounter {
   ) {}
 
   init(balance: DailyBalance) {
-    this.date = null;
+    this.date = balance.date;
     this.amountToDump = balance.amount;
     this.amount = balance.amount;
   }
 
   async add(balance: DailyBalance) {
-    const datesNotEqual = this.date !== balance.date;
-    this.logger.log(`${this.date} ${balance.date} ${this.mode}`);
-    if (this.date && datesNotEqual) {
-      this.logger.log(`DUMP ${this.date} ${balance.date}`);
-      await this.dump();
+    if (new Date(this.date).getTime() >= new Date(balance.date).getTime()) {
+      if (this.date && this.date !== balance.date) {
+        await this.dump();
+      }
+      this.increment(balance);
     }
-    this.increment(balance);
   }
 
   private increment(balance: DailyBalance) {
@@ -180,7 +222,6 @@ class BalanceCounter {
     b.amount = this.amountToDump;
     b.accountId = this.accountId;
     this.amountToDump = this.amount;
-    this.logger.log(b);
     return await this.dailyBalanceService.upsertDailyBalance(b);
   }
 }

@@ -4,13 +4,15 @@ import {HttpModule} from "@nestjs/common";
 import {ConfigModule, ConfigService} from "@nestjs/config";
 import configuration from "./config/configuration";
 import {TypeOrmModule} from "@nestjs/typeorm";
-import {ExtractBalanceMutationMode, BalanceMutationExtractorService} from "./balance-mutation-extractor.service";
+import {BalanceMutationExtractorService, ExtractBalanceMutationMode} from "./balance-mutation-extractor.service";
 import {StellarService} from "./stellar.service";
 import StellarSdk from "stellar-sdk";
 import {DailyBalance} from "./entities/daily-balance.entity";
 import {MyLoggerService} from "./my-logger.service";
 import {DailyBalanceExtractorService, ExtractDailyBalanceMode} from "./daily-balance-extractor.service";
 import {DailyBalanceService} from "./daily-balance.service";
+import {BalanceMutationsService} from "./balance-mutations.service";
+import {BalanceMutation} from "./entities/balance-mutation.entity";
 
 process.env.TZ = 'UTC';
 
@@ -43,13 +45,19 @@ describe('RatesService', () => {
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
-      providers: [ConfigService, BalanceMutationExtractorService, StellarService, DailyBalanceService],
+      providers: [
+        BalanceMutationsService,
+        BalanceMutationExtractorService,
+        ConfigService,
+        StellarService,
+        DailyBalanceService,
+      ],
       imports: [
         TypeOrmModule.forRootAsync({
           useFactory: (config: ConfigService) => config.get('database'),
           inject: [ConfigService],
         }),
-        TypeOrmModule.forFeature([DailyBalance]),
+        TypeOrmModule.forFeature([DailyBalance, BalanceMutation]),
         HttpModule,
         ConfigModule.forRoot({
           isGlobal: true,
@@ -68,6 +76,11 @@ describe('RatesService', () => {
 
   describe('RatesService', () => {
     it('fetch', async () => {
+      if (true) {
+        const extractor = new DailyBalanceExtractorService(dailyBalanceService, stellarService);
+        const a = await extractor.fetchEarlierDailyBalances('GBR3RS2Z277FER476OFHFXQJRKYSQX4Z7XNWO65AN3QPRUANUASANG3L');
+        logger.log(a.map(a => a.date).sort());
+      }
       if (false) {
         await stellarTransactionService.extract({
           accountId: pubKey1,
@@ -79,7 +92,7 @@ describe('RatesService', () => {
         //  //toDate: new Date('2020-02-10'),
         //});
       }
-      if (true) {
+      if (false) {
         const extractor = new DailyBalanceExtractorService(dailyBalanceService, stellarService);
         //npm run balance:generate-history -- --account=GBR3RS2Z277FER476OFHFXQJRKYSQX4Z7XNWO65AN3QPRUANUASANG3L --mode=from-end --to-date=2019-10-01
         await extractor.extract({accountId: 'GBR3RS2Z277FER476OFHFXQJRKYSQX4Z7XNWO65AN3QPRUANUASANG3L', mode: ExtractDailyBalanceMode.FROM_TAIL, toDate: new Date('2019-10-01')});
