@@ -11,7 +11,7 @@ import {StellarService} from "./stellar.service";
 import {OrderOption} from "./app.enums";
 
 export enum ExtractDailyBalanceMode {
-  FROM_HEAD,
+  FROM_HEAD, // Deprecated, to be removed soon
   FROM_TAIL,
 }
 
@@ -131,7 +131,7 @@ export class DailyBalanceExtractorService {
       ).map((value) => getRepository(DailyBalance)
         .createQueryBuilder('DailyBalance')
         .where('DailyBalance.accountId = :accountId and asset = :asset', {accountId, asset: value.asset})
-        .orderBy('DailyBalance.cursor', "DESC")
+        .orderBy('DailyBalance.date', 'ASC')
         .getOne()
       )
     )
