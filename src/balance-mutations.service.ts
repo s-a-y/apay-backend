@@ -31,6 +31,9 @@ export class BalanceMutationsService extends AbstractService<GetBalanceMutations
         case order.field === 'cursor':
           builder.andWhere(`balance_mutation.cursor ${sign} :cursor`, {cursor: +input.cursor});
           break;
+        case order.field === 'externalId':
+          builder.andWhere(`balance_mutation.externalId ${sign} :cursor`, {cursor: input.cursor});
+          break;
         case ['at'].includes(order.field):
           builder.andWhere(`balance_mutation.${order.field}Cursor ${sign} :cursor`, {cursor: input.cursor});
           break;

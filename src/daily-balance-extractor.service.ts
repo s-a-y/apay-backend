@@ -13,6 +13,7 @@ import {OrderOption} from "./app.enums";
 export enum ExtractDailyBalanceMode {
   FROM_HEAD, // Deprecated, to be removed soon
   FROM_TAIL,
+  CATCH_TAIL,
 }
 
 export interface ExtractDailyBalanceOptions {
@@ -49,6 +50,17 @@ export class DailyBalanceExtractorService {
       case ExtractDailyBalanceMode.FROM_HEAD:
         queryBuilder.orderBy('BalanceMutation.at', OrderOption.ASC);
         break;
+      case ExtractDailyBalanceMode.CATCH_TAIL:
+        toDate = new Date((await this.fetchLatestKnownDailyBalances(accountId)).map(v => v.date).sort().shift());
+
+        queryBuilder
+          .andWhere('BalanceMutation.at >= :value', {value: toDate})
+          .orderBy('BalanceMutation.at', OrderOption.DESC);
+
+        (await this.fetchDailyBalancesFromStellar(accountId))
+          .forEach(balance => balancesCollector.init(balance));
+
+        break;
       case ExtractDailyBalanceMode.FROM_TAIL:
         if (!toDate) {
           throw new Error('toDate is not defined!');
@@ -58,7 +70,7 @@ export class DailyBalanceExtractorService {
           .andWhere('BalanceMutation.at >= :value', {value: toDate})
           .orderBy('BalanceMutation.at', OrderOption.DESC);
 
-        (await this.fetchInitialDailyBalances(accountId))
+        (await this.fetchInitialDailyBalancesForFromTail(accountId))
           .forEach(balance => balancesCollector.init(balance));
 
         break;
@@ -99,8 +111,16 @@ export class DailyBalanceExtractorService {
    *
    * @param accountId
    */
-  async fetchInitialDailyBalances(accountId: string) {
-    const earlierBalances = await this.fetchEarlierDailyBalances(accountId);
+  private async fetchInitialDailyBalancesForFromTail(accountId: string) {
+    const earlierBalances = await this.fetchEarliestKnownDailyBalances(accountId);
+    return (await this.fetchDailyBalancesFromStellar(accountId))
+      .map((currentBalance) => {
+        const found = earlierBalances.filter(v => v.asset === currentBalance.asset).pop();
+        return found ? found : currentBalance;
+      });
+  }
+
+  private async fetchDailyBalancesFromStellar(accountId: string) {
     return (await this.stellarService.fetchBalances(accountId))
       .map((line) => {
         const balance = new DailyBalance();
@@ -109,10 +129,6 @@ export class DailyBalanceExtractorService {
         balance.asset = line.asset;
         balance.accountId = accountId;
         return balance;
-      })
-      .map((currentBalance) => {
-        const found = earlierBalances.filter(v => v.asset === currentBalance.asset).pop();
-        return found ? found : currentBalance;
       });
   }
 
@@ -121,20 +137,36 @@ export class DailyBalanceExtractorService {
    *
    * @param accountId
    */
-  async fetchEarlierDailyBalances(accountId: string) {
+  private async fetchEarliestKnownDailyBalances(accountId: string) {
     return Promise.all(
-      (await getRepository(DailyBalance)
+      (await this.getKnownAssets(accountId))
+        .map((asset) => getRepository(DailyBalance)
         .createQueryBuilder('DailyBalance')
-        .select('DISTINCT "DailyBalance"."asset"')
-        .where('DailyBalance.accountId = :accountId', {accountId})
-        .getRawMany()
-      ).map((value) => getRepository(DailyBalance)
-        .createQueryBuilder('DailyBalance')
-        .where('DailyBalance.accountId = :accountId and asset = :asset', {accountId, asset: value.asset})
+        .where('DailyBalance.accountId = :accountId and asset = :asset', {accountId, asset})
         .orderBy('DailyBalance.date', 'ASC')
         .getOne()
       )
-    )
+    );
+  }
+
+  private async fetchLatestKnownDailyBalances(accountId: string) {
+    return Promise.all(
+      (await this.getKnownAssets(accountId))
+        .map((asset) => getRepository(DailyBalance)
+          .createQueryBuilder('DailyBalance')
+          .where('DailyBalance.accountId = :accountId and asset = :asset', {accountId, asset})
+          .orderBy('DailyBalance.date', 'DESC')
+          .getOne()
+        )
+    );
+  }
+
+  private async getKnownAssets(accountId: string) {
+    return (await getRepository(DailyBalance)
+      .createQueryBuilder('DailyBalance')
+      .select('DISTINCT "DailyBalance"."asset"')
+      .where('DailyBalance.accountId = :accountId', {accountId})
+      .getRawMany()).map(value => value.asset);
   }
 
   private convertRawBalanceMutationToDailyBalance(o: any) {

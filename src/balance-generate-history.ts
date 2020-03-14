@@ -7,9 +7,11 @@ function error(message) {
   console.log(`Error: ${message}`);
   console.log("\n\nUsage example:");
   console.log("\t - generate history starting from oldest effects available:");
-  console.log("\t\tnpm run balance:generate-history -- --account=GD24DA265PCBCIFXMRCIUSTPXHD4CMWVWSMQN6SJG7NJ6OSHDKTHZJVD --mode=from-beginning");
+  console.log("\t\tnpm run balance:generate-history -- --account=GD24DA265PCBCIFXMRCIUSTPXHD4CMWVWSMQN6SJG7NJ6OSHDKTHZJVD --mode=from-head");
   console.log("\n\t - generate history staring from latest effects available:");
-  console.log("\t\tnpm run balance:generate-history -- --account=GD24DA265PCBCIFXMRCIUSTPXHD4CMWVWSMQN6SJG7NJ6OSHDKTHZJVD --mode=from-end --to-date=2020-02-01");
+  console.log("\t\tnpm run balance:generate-history -- --account=GD24DA265PCBCIFXMRCIUSTPXHD4CMWVWSMQN6SJG7NJ6OSHDKTHZJVD --mode=from-tail --to-date=2020-02-01");
+  console.log("\n\t - catch up latest daily balances (should run periodically after initial import with --mode=from-tail):");
+  console.log("\t\tnpm run balance:generate-history -- --account=GD24DA265PCBCIFXMRCIUSTPXHD4CMWVWSMQN6SJG7NJ6OSHDKTHZJVD --mode=catch-tail");
   console.log("\n");
   console.log("Exit now.");
   process.exit(1);
@@ -26,15 +28,18 @@ if (!account) {
 }
 
 switch (argv['mode']) {
-  case 'from-beginning':
+  case 'from-head':
     mode = ExtractDailyBalanceMode.FROM_HEAD;
     break;
-  case 'from-end':
+  case 'from-tail':
     mode = ExtractDailyBalanceMode.FROM_TAIL;
     if (!argv['to-date'] || !Date.parse(argv['to-date'])) {
       error('bad or empty to-date');
     }
     toDate = new Date(argv['to-date']);
+    break;
+  case 'catch-tail':
+    mode = ExtractDailyBalanceMode.CATCH_TAIL;
     break;
   default:
     error('Bad mode');
