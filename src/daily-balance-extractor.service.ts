@@ -11,7 +11,6 @@ import {StellarService} from "./stellar.service";
 import {OrderOption} from "./app.enums";
 
 export enum ExtractDailyBalanceMode {
-  FROM_HEAD, // Deprecated, to be removed soon
   FROM_TAIL,
   CATCH_TAIL,
 }
@@ -47,9 +46,6 @@ export class DailyBalanceExtractorService {
       .where('BalanceMutation.accountId = :id', {id: accountId});
 
     switch (mode) {
-      case ExtractDailyBalanceMode.FROM_HEAD:
-        queryBuilder.orderBy('BalanceMutation.at', OrderOption.ASC);
-        break;
       case ExtractDailyBalanceMode.CATCH_TAIL:
         toDate = new Date((await this.fetchLatestKnownDailyBalances(accountId)).map(v => v.date).sort().shift());
 
@@ -241,14 +237,9 @@ class BalanceCounter {
   }
 
   private increment(balance: DailyBalance) {
-    this.amount = this.mode === ExtractDailyBalanceMode.FROM_HEAD
-      ? this.amount.plus(balance.amount)
-      : this.amount.minus(balance.amount);
+    this.amount = this.amount.minus(balance.amount);
     this.date = balance.date;
     this.amountToDump = this.amountToDump || this.amount;
-    this.amountToDump = this.mode === ExtractDailyBalanceMode.FROM_HEAD
-      ? this.amount
-      : this.amountToDump;
   }
 
   async dump() {

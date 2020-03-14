@@ -76,19 +76,14 @@ describe('RatesService', () => {
 
   describe('RatesService', () => {
     it('fetch', async () => {
-      if (true) {
-        const extractor = new DailyBalanceExtractorService(dailyBalanceService, stellarService);
-        const a = await extractor.fetchEarlierDailyBalances('GBR3RS2Z277FER476OFHFXQJRKYSQX4Z7XNWO65AN3QPRUANUASANG3L');
-        logger.log(a.map(a => a.date).sort());
-      }
       if (false) {
         await stellarTransactionService.extract({
           accountId: pubKey1,
-          mode: ExtractBalanceMutationMode.FROM_HEAD,
+          mode: ExtractBalanceMutationMode.FROM_TAIL,
         });
         //await stellarTransactionService.extract({
         //  accountId: pubKey2,
-        //  mode: ExtractBalanceMutationMode.FROM_HEAD,
+        //  mode: ExtractBalanceMutationMode.FROM_TAIL,
         //  //toDate: new Date('2020-02-10'),
         //});
       }
@@ -98,7 +93,7 @@ describe('RatesService', () => {
         await extractor.extract({accountId: 'GBR3RS2Z277FER476OFHFXQJRKYSQX4Z7XNWO65AN3QPRUANUASANG3L', mode: ExtractDailyBalanceMode.FROM_TAIL, toDate: new Date('2019-10-01')});
         //await extractor.extract({accountId: pubKey1, mode: ExtractDailyBalanceMode.FROM_TAIL, toDate: new Date('2020-02-01')});
         //await extractor.extract({accountId: pubKey2, mode: ExtractDailyBalanceMode.FROM_TAIL, toDate: new Date('2020-02-01')});
-        //await extractor.extract({accountId: pubKey1, mode: ExtractDailyBalanceMode.FROM_HEAD});
+        //await extractor.extract({accountId: pubKey1, mode: ExtractDailyBalanceMode.FROM_TAIL});
       }
       if (false) {
         await stellarService.buildAndSubmitTx(

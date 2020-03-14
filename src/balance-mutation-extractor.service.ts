@@ -1,5 +1,5 @@
 import StellarSdk, {ServerApi} from 'stellar-sdk';
-import {from, of, Subject, Subscription} from "rxjs";
+import {from, of, Subject} from "rxjs";
 import {MyLoggerService} from "./my-logger.service";
 import {ConfigService} from "@nestjs/config";
 import {Injectable} from "@nestjs/common";
@@ -11,7 +11,6 @@ import {BalanceMutationsService} from "./balance-mutations.service";
 import {GetBalanceMutationsDto} from "./dto/get-balance-mutations.dto";
 
 export enum ExtractBalanceMutationMode {
-  FROM_HEAD,
   FROM_TAIL,
   CATCH_TAIL,
 }
@@ -41,7 +40,7 @@ export class BalanceMutationExtractorService {
 
   async extract({
     accountId,
-    mode = ExtractBalanceMutationMode.FROM_HEAD,
+    mode = ExtractBalanceMutationMode.FROM_TAIL,
     toDate,
     cursor,
     reset = false,
@@ -108,8 +107,6 @@ export class BalanceMutationExtractorService {
           }
 
           switch (mode) {
-            case ExtractBalanceMutationMode.FROM_HEAD:
-              break;
             case ExtractBalanceMutationMode.FROM_TAIL:
             case ExtractBalanceMutationMode.CATCH_TAIL:
               if (new Date(value.created_at) < toDate) {
@@ -197,7 +194,7 @@ export class BalanceMutationExtractorService {
 
   private initEffectsSubject(
     subject: Subject<FetchedEffectRecord>,
-    {accountId, mode = ExtractBalanceMutationMode.FROM_HEAD, toDate, cursor}: ExtractBalanceMutationOptions,
+    {accountId, mode = ExtractBalanceMutationMode.FROM_TAIL, toDate, cursor}: ExtractBalanceMutationOptions,
   ) {
     if (mode === ExtractBalanceMutationMode.FROM_TAIL && !toDate) {
       throw new Error('toDate is not defined!');
@@ -211,9 +208,6 @@ export class BalanceMutationExtractorService {
     }
 
     switch (mode) {
-      case ExtractBalanceMutationMode.FROM_HEAD:
-        builder.order("asc");
-        break;
       case ExtractBalanceMutationMode.FROM_TAIL:
       case ExtractBalanceMutationMode.CATCH_TAIL:
         builder.order("desc");
