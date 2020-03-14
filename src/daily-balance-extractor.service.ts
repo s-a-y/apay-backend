@@ -76,33 +76,38 @@ export class DailyBalanceExtractorService {
         break;
     }
 
-    await queryBuilder
-      .stream()
-      .then((stream) => {
-        const subscription = fromEvent(stream, 'data')
-          .pipe(
-            timeoutWith(5000, of(COMPLETED)),
-            concatMap(async (o: any) => {
-              if (o === COMPLETED) {
-                switch (mode) {
-                  case ExtractDailyBalanceMode.FROM_HEAD:
-                    await balancesCollector.dump();
-                    break;
-                  case ExtractDailyBalanceMode.FROM_TAIL:
-                    await balancesCollector.dump();
-                    break;
+    return new Promise((resolve, reject) => {
+      queryBuilder
+        .stream()
+        .then((stream) => {
+          const subscription = fromEvent(stream, 'data')
+            .pipe(
+              timeoutWith(5000, of(COMPLETED)),
+              concatMap(async (o: any) => {
+                if (o === COMPLETED) {
+                  await balancesCollector.dump();
+                  this.logger.log('extract(): completed');
+                  subscription.unsubscribe();
+                  resolve();
+                } else {
+                  const dailyBalance = this.convertRawBalanceMutationToDailyBalance(o);
+                  await balancesCollector.add(dailyBalance);
                 }
+
+                return;
+              }),
+            ).subscribe({
+              error: (error: any) => {
+                console.log(error);
+              },
+              complete: () => {
                 this.logger.log('extract(): completed');
                 subscription.unsubscribe();
-              } else {
-                const dailyBalance = this.convertRawBalanceMutationToDailyBalance(o);
-                await balancesCollector.add(dailyBalance);
+                resolve();
               }
-
-              return;
-            }),
-          ).subscribe();
-      });
+            });
+        });
+    });
   }
 
   /**

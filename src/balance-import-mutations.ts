@@ -54,6 +54,7 @@ async function bootstrap() {
     mode,
     toDate,
     accountId: account,
-  });
+  })
+    .then(() => process.exit(0));
 }
 bootstrap();
