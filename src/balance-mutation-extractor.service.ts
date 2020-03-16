@@ -11,8 +11,8 @@ import {BalanceMutationsService} from "./balance-mutations.service";
 import {GetBalanceMutationsDto} from "./dto/get-balance-mutations.dto";
 
 export enum ExtractBalanceMutationMode {
-  FROM_TAIL,
-  CATCH_TAIL,
+  FROM_TAIL = 'from-tail',
+  CATCH_TAIL = 'catch-tail',
 }
 
 export interface ExtractBalanceMutationOptions {
@@ -51,7 +51,7 @@ export class BalanceMutationExtractorService {
         timeoutWith(5000, of(COMPLETED))
       );
 
-    this.logger.log('extract(): started');
+    this.logger.log({accountId, mode, toDate, log: 'extract(): started'});
 
     if (reset) {
       cursor = null;
@@ -95,7 +95,7 @@ export class BalanceMutationExtractorService {
       const subscription = observable.subscribe(
         async (value) => {
           const stopExtraction = (msg: string) => {
-            this.logger.log(msg);
+            this.logger.log({accountId, mode, toDate, log: msg});
             subscription.unsubscribe();
             closeStream();
             resolve();

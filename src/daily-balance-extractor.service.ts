@@ -11,8 +11,8 @@ import {StellarService} from "./stellar.service";
 import {OrderOption} from "./app.enums";
 
 export enum ExtractDailyBalanceMode {
-  FROM_TAIL,
-  CATCH_TAIL,
+  FROM_TAIL = 'from-tail',
+  CATCH_TAIL = 'catch-tail',
 }
 
 export interface ExtractDailyBalanceOptions {
@@ -36,8 +36,6 @@ export class DailyBalanceExtractorService {
 
   async extract({accountId, mode, toDate}: ExtractDailyBalanceOptions) {
     this.logger.log({accountId, mode, toDate, log: 'extract(): started'});
-
-    this.logger.log('extract(): started');
 
     const balancesCollector = new BalanceCollector(mode, this.dailyBalanceService);
 
@@ -82,7 +80,7 @@ export class DailyBalanceExtractorService {
               concatMap(async (o: any) => {
                 if (o === COMPLETED) {
                   await balancesCollector.dump();
-                  this.logger.log('extract(): completed');
+                  this.logger.log({accountId, mode, toDate, log: 'extract(): completed'});
                   subscription.unsubscribe();
                   resolve();
                 } else {
@@ -97,7 +95,7 @@ export class DailyBalanceExtractorService {
                 console.log(error);
               },
               complete: () => {
-                this.logger.log('extract(): completed');
+                this.logger.log({accountId, mode, toDate, log: 'extract(): completed'});
                 subscription.unsubscribe();
                 resolve();
               }

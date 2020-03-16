@@ -7,11 +7,17 @@ import {MyLoggerService} from "./my-logger.service";
 import {DailyBalance} from "./entities/daily-balance.entity";
 import {Asset, DailyBalance as DailyBalanceInterface} from './app.interfaces';
 import {GetDailyBalancesDto} from "./dto/get-daily-balances.dto";
+import {BalanceMutationExtractorService, ExtractBalanceMutationMode} from "./balance-mutation-extractor.service";
+import {DailyBalanceExtractorService, ExtractDailyBalanceMode} from "./daily-balance-extractor.service";
+import {StellarService} from "./stellar.service";
 
 @Injectable()
 export class DailyBalanceService extends AbstractService<GetDailyBalancesDto, DailyBalance, DailyBalanceInterface> {
   private readonly logger = new MyLoggerService(DailyBalanceService.name);
+  private dailyBalanceExtractorService: DailyBalanceExtractorService;
   constructor(
+    private readonly stellarService: StellarService,
+    private readonly balanceMutationExtractorService: BalanceMutationExtractorService,
     @InjectRepository(DailyBalance)
     protected readonly entitiesRepository: Repository<DailyBalance>,
   ) {
@@ -107,5 +113,31 @@ export class DailyBalanceService extends AbstractService<GetDailyBalancesDto, Da
         balance.createdAtCursor = this.generateDateCursor(balance.createdAt, balance.cursor);
         return this.entitiesRepository.save(balance);
       });
+  }
+
+  async syncDailyBalances({toDate, accountId}: {toDate: Date, accountId: string}) {
+    this.dailyBalanceExtractorService = new DailyBalanceExtractorService(this, this.stellarService);
+
+    return this.balanceMutationExtractorService.extract({
+      accountId,
+      toDate,
+      mode: ExtractBalanceMutationMode.FROM_TAIL,
+    }).then(() => {
+      return this.balanceMutationExtractorService.extract({
+        accountId,
+        mode: ExtractBalanceMutationMode.CATCH_TAIL,
+      });
+    }).then(() => {
+      return this.dailyBalanceExtractorService.extract({
+        accountId,
+        toDate,
+        mode: ExtractDailyBalanceMode.FROM_TAIL,
+      });
+    }).then(() => {
+      return this.dailyBalanceExtractorService.extract({
+        accountId,
+        mode: ExtractDailyBalanceMode.CATCH_TAIL,
+      });
+    });
   }
 }
