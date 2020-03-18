@@ -1,0 +1,15 @@
+---
+- name: Run npm install
+  shell: "source ~/.profile && npm ci"
+  args:
+    executable: /bin/bash
+
+- name: Build
+  shell: "source ~/.profile && npm run build"
+  args:
+    executable: /bin/bash
+
+- name: Pack
+  archive:
+    path: ../dist
+    dest: ../dist.tgz

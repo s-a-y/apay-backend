@@ -1,4 +1,5 @@
 import { Networks } from "stellar-sdk";
+import * as fs from 'fs';
 export default () => ({
   apayBaseUrl: 'https://test.apay.io',
   swapAccount: process.env.SWAP_ACCOUNT,
@@ -10,6 +11,10 @@ export default () => ({
     host: process.env.TYPEORM_HOST,
     username: process.env.TYPEORM_USERNAME,
     password: process.env.TYPEORM_PASSWORD,
+    ssl: process.env.TYPEORM_SSL ? {
+      rejectUnauthorized: true,
+      ca: fs.readFileSync('/app/postgres.crt').toString(),
+    } : null,
     database: process.env.TYPEORM_DATABASE,
     port: parseInt(process.env.TYPEORM_PORT, 10),
     logging: process.env.TYPEORM_LOGGING === 'true',
@@ -33,6 +38,8 @@ export default () => ({
   },
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
-    port: +process.env.REDIS_PORT || 6379,
-  }
+    port: process.env.REDIS_PORT || 6379,
+    password: process.env.REDIS_PASS || '',
+    keepAlive: 15000,
+  },
 });

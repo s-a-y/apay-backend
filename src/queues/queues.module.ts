@@ -6,15 +6,23 @@ const BullQueueModule = BullModule.registerQueueAsync(
   {
     name: 'JobQueue',
     inject: [ConfigService],
-    useFactory: (config: ConfigService) => config.get('redis'),
+    useFactory: (config: ConfigService) => {
+      return {
+        redis: config.get('redis'),
+      };
+    },
     imports: [ConfigService],
   },
   {
     name: 'txs',
     inject: [ConfigService],
-    useFactory: (config: ConfigService) => config.get('redis'),
+    useFactory: (config: ConfigService) => {
+      return {
+        redis: config.get('redis'),
+      };
+    },
     imports: [ConfigService],
-  }
+  },
 );
 
 @Module({

@@ -1,0 +1,8 @@
+---
+- hosts: ci
+  roles:
+    - build
+
+- hosts: web
+  roles:
+    - app
