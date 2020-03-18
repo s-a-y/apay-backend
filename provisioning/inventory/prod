@@ -1,0 +1,10 @@
+[ci]
+localhost ansible_connection=local
+
+[web]
+165.22.21.34
+
+[web:vars]
+ansible_connection=ssh
+ansible_ssh_user=root
+ansible_python_interpreter=/usr/bin/python3

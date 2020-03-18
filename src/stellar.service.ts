@@ -1,19 +1,26 @@
 import { Injectable } from '@nestjs/common';
-import {MyLoggerService} from "./my-logger.service";
-import StellarSdk from "stellar-sdk";
-import {ConfigService} from "@nestjs/config";
-import {Operation} from "stellar-base";
-import BigNumber from "bignumber.js";
+import {MyLoggerService} from './my-logger.service';
+import { Asset, Server, Keypair, Operation, TransactionBuilder, Account, Memo, xdr } from 'stellar-sdk';
+import * as StellarSdk from 'stellar-sdk';
+import {ConfigService} from '@nestjs/config';
+import BigNumber from 'bignumber.js';
+import {reduce, filter} from 'lodash';
 
 @Injectable()
 export class StellarService {
   private readonly logger = new MyLoggerService(StellarService.name);
   private server;
   private networkPassphrase: string;
+
+  private knownIssuers = {
+    XLM: null,
+    BTC: 'GAUTUYY2THLF7SGITDFMXJVYH3LHDSMGEAKSBU267M2K7A3W543CKUEF',
+  };
+
   constructor(
     private readonly configService: ConfigService,
   ) {
-    this.server = new StellarSdk.Server(this.configService.get('stellar.horizonUrl'));
+    this.server = new Server(this.configService.get('stellar.horizonUrl'));
     this.networkPassphrase = this.configService.get('stellar.networkPassphrase');
   }
 
@@ -24,32 +31,142 @@ export class StellarService {
         amount: new BigNumber(line.balance),
         asset: line.asset_type === 'native' ? 'native' : `${line.asset_code} ${line.asset_issuer}`,
       };
-    })
+    });
   }
 
-  async buildAndSubmitTx(sourceSecretKey, operations: Operation[] = [], {memo = null, timeout = 30, secretKeys = []}) {
-    const sourceKeypair = StellarSdk.Keypair.fromSecret(sourceSecretKey);
-    const account = await this.server.loadAccount(sourceKeypair.publicKey());
+  async buildAndSubmitTx(
+    sourceSecretKey,
+    operations: xdr.Operation[] = [],
+    { memo = null, timeout = 30, sequence = null, secretKeys = []},
+  ) {
+    const sourceKeypair = Keypair.fromSecret(sourceSecretKey);
     const fee = await this.server.fetchBaseFee();
 
-    const builder = new StellarSdk.TransactionBuilder(account, {
+    const builder = new TransactionBuilder(
+      sequence
+        ? new Account(sourceKeypair.publicKey(), sequence)
+        : await this.server.loadAccount(sourceKeypair.publicKey()), {
       fee,
       networkPassphrase: this.networkPassphrase,
     });
     if (timeout) {
-      builder.setTimeout(timeout)
+      builder.setTimeout(timeout);
     }
     if (memo) {
-      builder.addMemo(memo)
+      builder.addMemo(memo);
     }
     operations.forEach(o => builder.addOperation(o));
 
     const tx = builder.build();
     tx.sign(sourceKeypair);
     secretKeys.forEach((secret) => {
-      tx.sign(StellarSdk.Keypair.fromSecret(secret))
+      tx.sign(Keypair.fromSecret(secret));
     });
 
     return await this.server.submitTransaction(tx);
+  }
+
+  async listenToPayments(account: string, callback: (op) => Promise<any>) {
+    const builder = this.server
+      .payments()
+      .forAccount(account)
+      .join('transactions');
+
+    // const client = this.redisService.getClient();
+    // const cursor = await client.get(`${process.env.NODE_ENV}:stellar-listener:${account}`);
+    // if (cursor) {
+    //   builder.cursor(cursor);
+    // }
+
+    builder.stream({
+      onmessage: async (op) => {
+        if (op.transaction_successful
+          && op.to === account
+          // not checking issuer, relying on trustlines here
+        ) {
+          this.logger.log(op, 'new tx');
+          try {
+            await callback(op);
+          } catch (err) {
+            this.logger.error(err);
+          }
+          // await client.set(`${process.env.NODE_ENV}:stellar-listener:${account}`, op.paging_token);
+        }
+      },
+    });
+  }
+
+  loadAccount(account: string) {
+    return this.server.loadAccount(account);
+  }
+
+  async calculateSell(currencyIn: string, currencyOut: string, amountOut: string) {
+    const result = await this.server.strictReceivePaths(
+      [new Asset(currencyIn, this.knownIssuers[currencyIn])],
+      new Asset(currencyOut, this.knownIssuers[currencyOut]),
+      amountOut,
+    ).call();
+    const records = filter(result.records, (record) => record.path.length <= 1);
+    if (records.length > 0) {
+      return reduce(records, (acc, record) => {
+        return parseFloat(record.source_amount) < parseFloat(acc.source_amount) ? record : acc;
+      });
+    } else {
+      throw new Error('Unable to find path');
+    }
+  }
+
+  async calculateBuy(currencyIn: string, amountIn: string, currencyOut: string) {
+    const result = await this.server.strictSendPaths(
+      new Asset(currencyIn, this.knownIssuers[currencyIn]),
+      amountIn,
+      [new Asset(currencyOut, this.knownIssuers[currencyOut])],
+    ).call();
+    const records = filter(result.records, (record) => record.path.length <= 1);
+    if (records.length > 0) {
+      return reduce(records, (acc, record) => {
+        return parseFloat(record.destination_amount) > parseFloat(acc.destination_amount) ? record : acc;
+      });
+    } else {
+      throw new Error('Unable to find path');
+    }
+  }
+
+  pathPaymentStrictReceive({ currencyIn, currencyOut, amountIn, amountOut, addressOut, memo, sequence }) {
+    const currencyInIssuer = this.knownIssuers[currencyIn];
+    const currencyOutIssuer = this.knownIssuers[currencyOut];
+    return this.buildAndSubmitTx(
+      this.configService.get('swapAccountSecret'), // channel secret actually
+      [StellarSdk.Operation.pathPaymentStrictReceive({
+        sendAsset: new Asset(currencyIn, currencyInIssuer),
+        sendMax: amountIn,
+        destination: addressOut,
+        destAsset: new Asset(currencyOut, currencyOutIssuer),
+        destAmount: amountOut,
+      })], {
+        sequence,
+        memo: (memo ? Memo.id(memo) : null),
+    });
+  }
+
+  pathPaymentStrictSend({ currencyIn, currencyOut, amountIn, amountOut, addressOut, memo, sequence }) {
+    const knownIssuers = {
+      XLM: null,
+      BTC: 'GAUTUYY2THLF7SGITDFMXJVYH3LHDSMGEAKSBU267M2K7A3W543CKUEF',
+    };
+    const currencyInIssuer = knownIssuers[currencyIn];
+    const currencyOutIssuer = knownIssuers[currencyOut];
+    return this.buildAndSubmitTx(
+      this.configService.get('swapAccountSecret'), // channel secret actually
+      [StellarSdk.Operation.pathPaymentStrictSend({
+        sendAsset: new Asset(currencyIn, currencyInIssuer),
+        sendAmount: amountIn,
+        destination: addressOut,
+        destAsset: new Asset(currencyOut, currencyOutIssuer),
+        destMin: amountOut,
+      })], {
+        sequence,
+        memo: (memo ? Memo.id(memo) : null),
+    });
   }
 }

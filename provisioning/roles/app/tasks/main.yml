@@ -1,0 +1,39 @@
+---
+#- name: Add node repo
+#  shell: curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+
+- name: Install packages
+  become: yes
+  apt: pkg='{{ items }}' state=latest
+  vars:
+    items:
+      - nginx
+      - nodejs
+
+#- name: Install pm2
+#  shell: npm i -g pm2
+
+- name: Setup vhost
+  become: yes
+  copy: src={{ item.src }} dest={{ item.dest }} owner=root group=root mode=0600
+  with_items:
+    - {src: 'cloudflare.crt', dest: '/etc/nginx/cloudflare.crt'}
+    - {src: 'proxy_params', dest: '/etc/nginx/proxy_params'}
+#    - {src: 'origin.key', dest: '/etc/nginx/origin.key'}
+#    - {src: 'origin.pem', dest: '/etc/nginx/origin.pem'}
+    - {src: 'vhost', dest: '/etc/nginx/sites-enabled/default'}
+#  notify: Restart nginx
+
+- name: Deploy app
+  git: repo=git@github.com:s-a-y/apay-backend.git dest=/app/apay-backend key_file=~/.ssh/deploy accept_hostkey=true
+
+- name: Run npm install
+  shell: npm i chdir=/app/apay-backend
+
+- name: Unpack app
+  unarchive:
+    src: ../dist.tgz
+    dest: /app/apay-backend
+
+#- name: Restart app
+#  command: "pm2 reload all"

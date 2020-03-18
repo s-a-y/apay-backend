@@ -11,11 +11,13 @@ import {RateHistory} from "./entities/rate-history.entity";
 import {DailyBalanceService} from "./daily-balance.service";
 import {DailyBalance} from "./entities/daily-balance.entity";
 import {BalanceMutationExtractorService} from "./balance-mutation-extractor.service";
-import {BullModule} from "@nestjs/bull";
+import { SwapModule } from './swap/swap.module';
 import {BalanceMutationsService} from "./balance-mutations.service";
 import {BalanceMutation} from "./entities/balance-mutation.entity";
 import {AdminController} from "./admin.controller";
 import {JobQueueProcessor} from "./job-queue.processor";
+import { QueuesModule } from './queues/queues.module';
+import { TxsProcessor } from './swap/txs.processor';
 
 @Module({
   imports: [
@@ -34,12 +36,8 @@ import {JobQueueProcessor} from "./job-queue.processor";
       RatesLog,
       RateHistory,
     ]),
-    BullModule.registerQueueAsync({
-      name: 'JobQueue',
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => config.get('redis'),
-      imports: [ConfigService],
-    }),
+    QueuesModule,
+    SwapModule,
   ],
   controllers: [
     AdminController,
@@ -54,6 +52,7 @@ import {JobQueueProcessor} from "./job-queue.processor";
     RateHistoryService,
     RatesService,
     StellarService,
+    TxsProcessor,
   ],
 })
 export class AppModule {}
