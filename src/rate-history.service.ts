@@ -10,6 +10,7 @@ import { from } from 'rxjs';
 import {flatMap, map, mergeMap} from "rxjs/operators";
 import {MyLoggerService} from "./my-logger.service";
 import {GetRateHistoryDto} from "./dto/get-rate-history.dto";
+import BigNumber from "bignumber.js";
 
 @Injectable()
 export class RateHistoryService extends AbstractService<GetRateHistoryDto, RateHistory, RateHistory> {
@@ -76,7 +77,8 @@ export class RateHistoryService extends AbstractService<GetRateHistoryDto, RateH
     return builder;
   }
 
-  async fetchRateHistory(startDate: Date, endDate: Date = null) {
+  async fetchRateHistory(startDate: Date = null, endDate: Date = null) {
+    startDate = startDate ? startDate : new Date();
     return new Promise((resolve, reject) => {
       from(Object.values(SupportedCurrency)).pipe(
         mergeMap(currency => this.fetchCurrencyRateHistoryFromNomics(currency, startDate, endDate).pipe(map(response => ({currency, response})))),
@@ -116,7 +118,7 @@ export class RateHistoryService extends AbstractService<GetRateHistoryDto, RateH
     if (!existingItem) {
       const object = new RateHistory();
       object.at = new Date(item.timestamp);
-      object.rate = item.rate;
+      object.rate = new BigNumber(item.rate);
       object.currency = currency;
       return await this.saveRateHistory(object)
         .then((o) => {

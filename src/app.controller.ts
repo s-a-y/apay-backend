@@ -10,9 +10,11 @@ import {Queue} from "bull";
 import {InjectQueue} from "@nestjs/bull";
 import {GetBalanceMutationsDto} from "./dto/get-balance-mutations.dto";
 import {BalanceMutationsService} from "./balance-mutations.service";
+import {MyLoggerService} from "./my-logger.service";
 
 @Controller()
 export class AppController {
+  private readonly logger = new MyLoggerService(DailyBalanceService.name);
   constructor(
     private readonly ratesService: RatesService,
     private readonly rateHistoryService: RateHistoryService,
