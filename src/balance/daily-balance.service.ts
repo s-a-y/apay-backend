@@ -1,27 +1,47 @@
 import {Injectable} from '@nestjs/common';
 import {getRepository, Repository, SelectQueryBuilder} from "typeorm";
-import {AbstractService} from "./abstract.service";
+import {AbstractService} from "../abstract.service";
 import {InjectRepository} from "@nestjs/typeorm";
-import {OrderOption} from "./app.enums";
-import {MyLoggerService} from "./my-logger.service";
+import {OrderOption} from "../app.enums";
+import {MyLoggerService} from "../my-logger.service";
 import {DailyBalance} from "./entities/daily-balance.entity";
-import {Asset, DailyBalance as DailyBalanceInterface} from './app.interfaces';
+import {Asset, DailyBalance as DailyBalanceInterface} from '../app.interfaces';
 import {GetDailyBalancesDto} from "./dto/get-daily-balances.dto";
 import {BalanceMutationExtractorService, ExtractBalanceMutationMode} from "./balance-mutation-extractor.service";
 import {DailyBalanceExtractorService, ExtractDailyBalanceMode} from "./daily-balance-extractor.service";
-import {StellarService} from "./stellar.service";
+import {StellarService} from "../stellar.service";
+import {AccountService} from "../account/account.service";
 
 @Injectable()
 export class DailyBalanceService extends AbstractService<GetDailyBalancesDto, DailyBalance, DailyBalanceInterface> {
   private readonly logger = new MyLoggerService(DailyBalanceService.name);
   private dailyBalanceExtractorService: DailyBalanceExtractorService;
   constructor(
+    private readonly accountService: AccountService,
     private readonly stellarService: StellarService,
     private readonly balanceMutationExtractorService: BalanceMutationExtractorService,
     @InjectRepository(DailyBalance)
     protected readonly entitiesRepository: Repository<DailyBalance>,
   ) {
     super();
+  }
+
+  async isAccountInitilaized(accountId: string) {
+    const account = await this.accountService.findOneByAddress(accountId);
+    if (!account) {
+      return false;
+    }
+    if (!account.balanceFetcherDetails.initLoad) {
+      return false;
+    }
+    return true;
+  }
+
+  async markAccountInitialized(accountId: string) {
+    const balanceFetcherDetails = (await this.accountService.findOneByAddressOrReturnNew(accountId)).balanceFetcherDetails;
+    balanceFetcherDetails.initLoad = true;
+
+    return this.accountService.update(accountId, {balanceFetcherDetails});
   }
 
   getItemsBuilder(input: GetDailyBalancesDto, repository?: Repository<DailyBalance>): SelectQueryBuilder<any> {
@@ -138,6 +158,18 @@ export class DailyBalanceService extends AbstractService<GetDailyBalancesDto, Da
         accountId,
         mode: ExtractDailyBalanceMode.CATCH_TAIL,
       });
+    }).then(() => {
+      return this.accountService.findOneByAddressOrReturnNew(accountId)
+        .then((account) => {
+          return this.accountService.update(
+            accountId,
+            {
+              ...account,
+              balanceFetcherDetails: {...account.balanceFetcherDetails, initLoad: true}
+            })
+        })
+    }).catch((error) => {
+      this.logger.error(error);
     });
   }
 }

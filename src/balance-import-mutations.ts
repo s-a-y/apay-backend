@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import minimist from 'minimist';
-import {BalanceMutationExtractorService, ExtractBalanceMutationMode} from "./balance-mutation-extractor.service";
+import {BalanceMutationExtractorService, ExtractBalanceMutationMode} from "./balance/balance-mutation-extractor.service";
 
 function error(message) {
   console.log(`Error: ${message}`);

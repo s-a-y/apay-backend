@@ -1,10 +1,10 @@
 import StellarSdk, {ServerApi} from 'stellar-sdk';
 import {from, of, Subject} from "rxjs";
-import {MyLoggerService} from "./my-logger.service";
+import {MyLoggerService} from "../my-logger.service";
 import {ConfigService} from "@nestjs/config";
 import {Injectable} from "@nestjs/common";
 import {BalanceMutation} from "./entities/balance-mutation.entity";
-import {BalanceMutationType, OrderOption} from "./app.enums";
+import {BalanceMutationType, OrderOption} from "../app.enums";
 import BigNumber from "bignumber.js";
 import {timeoutWith} from "rxjs/operators";
 import {BalanceMutationsService} from "./balance-mutations.service";

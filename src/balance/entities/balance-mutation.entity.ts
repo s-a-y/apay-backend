@@ -1,7 +1,7 @@
 import {Entity, Column, PrimaryGeneratedColumn, Generated, CreateDateColumn, Index, Unique} from 'typeorm';
-import {BalanceMutationType} from "../app.enums";
+import {BalanceMutationType} from "../../app.enums";
 import BigNumber from "bignumber.js";
-import {BigNumberToStringTransformer} from "../app.transformers";
+import {BigNumberToStringTransformer} from "../../app.transformers";
 
 @Entity()
 @Unique('UQ_accountId_type_externalId',['accountId', 'type', 'externalId'])

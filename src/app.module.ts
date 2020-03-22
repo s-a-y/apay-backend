@@ -8,16 +8,11 @@ import {RatesLog} from "./entities/rates-log.entity";
 import {RatesService} from "./rates.service";
 import {RateHistoryService} from "./rate-history.service";
 import {RateHistory} from "./entities/rate-history.entity";
-import {DailyBalanceService} from "./daily-balance.service";
-import {DailyBalance} from "./entities/daily-balance.entity";
-import {BalanceMutationExtractorService} from "./balance-mutation-extractor.service";
 import { SwapModule } from './swap/swap.module';
-import {BalanceMutationsService} from "./balance-mutations.service";
-import {BalanceMutation} from "./entities/balance-mutation.entity";
 import {AdminController} from "./admin.controller";
-import {JobQueueProcessor} from "./job-queue.processor";
 import { QueuesModule } from './queues/queues.module';
 import { TxsProcessor } from './swap/txs.processor';
+import {BalanceModule} from "./balance/balance.module";
 
 @Module({
   imports: [
@@ -31,24 +26,19 @@ import { TxsProcessor } from './swap/txs.processor';
       inject: [ConfigService],
     }),
     TypeOrmModule.forFeature([
-      BalanceMutation,
-      DailyBalance,
       RatesLog,
       RateHistory,
     ]),
     QueuesModule,
     SwapModule,
+    BalanceModule,
   ],
   controllers: [
     AdminController,
     AppController,
   ],
   providers: [
-    BalanceMutationExtractorService,
-    BalanceMutationsService,
     ConfigService,
-    DailyBalanceService,
-    JobQueueProcessor,
     RateHistoryService,
     RatesService,
     StellarService,

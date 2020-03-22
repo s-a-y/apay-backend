@@ -1,8 +1,8 @@
 import {IsDate, IsEnum, IsNotEmpty, IsOptional, ValidateNested} from 'class-validator';
 import {Transform, Type} from "class-transformer";
-import {EntitiesOrder, GetEntitiesInputInterface} from "../app.interfaces";
-import {AssetDto} from "./asset.dto";
-import {BalanceMutationType} from "../app.enums";
+import {EntitiesOrder, GetEntitiesInputInterface} from "../../app.interfaces";
+import {AssetDto} from "../../dto/asset.dto";
+import {BalanceMutationType} from "../../app.enums";
 
 export class GetBalanceMutationsDto implements GetEntitiesInputInterface {
   @IsOptional()

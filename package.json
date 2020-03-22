@@ -44,7 +44,9 @@
     "class-transformer": "^0.2.3",
     "class-validator": "^0.11.0",
     "fluent-logger": "^3.4.1",
+    "lodash": "latest",
     "minimist": "^1.2.2",
+    "moment": "^2.24.0",
     "pg": "^7.17.1",
     "pg-query-stream": "^3.0.2",
     "reflect-metadata": "^0.1.13",
@@ -52,8 +54,7 @@
     "rxjs": "^6.5.3",
     "stellar-sdk": "^4.0.2",
     "typeorm": "^0.2.22",
-    "winston": "^3.2.1",
-    "lodash": "latest"
+    "winston": "^3.2.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^6.9.0",

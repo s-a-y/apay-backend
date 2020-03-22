@@ -1,12 +1,12 @@
 import {InjectQueue, Process, Processor} from '@nestjs/bull';
 import {Job, Queue} from "bull";
 import {SyncDailyBalancesDto} from "./dto/sync-daily-balances.dto";
-import {MyLoggerService} from "./my-logger.service";
+import {MyLoggerService} from "../my-logger.service";
 import {DailyBalanceService} from "./daily-balance.service";
 
 @Processor('JobQueue')
-export class JobQueueProcessor {
-  private readonly logger = new MyLoggerService(JobQueueProcessor.name);
+export class BalanceProcessor {
+  private readonly logger = new MyLoggerService(BalanceProcessor.name);
 
   constructor(
     private readonly dailyBalanceService: DailyBalanceService,

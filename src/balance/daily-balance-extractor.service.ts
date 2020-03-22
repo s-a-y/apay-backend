@@ -1,14 +1,14 @@
-import {Injectable} from '@nestjs/common';
+import {forwardRef, Inject, Injectable} from '@nestjs/common';
 import {getRepository} from "typeorm";
 import {BalanceMutation} from "./entities/balance-mutation.entity";
 import {fromEvent, of} from "rxjs";
 import {concatMap, timeoutWith} from "rxjs/operators";
 import {DailyBalance} from "./entities/daily-balance.entity";
 import BigNumber from "bignumber.js";
-import {MyLoggerService} from "./my-logger.service";
+import {MyLoggerService} from "../my-logger.service";
 import {DailyBalanceService} from "./daily-balance.service";
-import {StellarService} from "./stellar.service";
-import {OrderOption} from "./app.enums";
+import {StellarService} from "../stellar.service";
+import {OrderOption} from "../app.enums";
 
 export enum ExtractDailyBalanceMode {
   FROM_TAIL = 'from-tail',
@@ -29,6 +29,7 @@ export class DailyBalanceExtractorService {
   private readonly logger = new MyLoggerService(DailyBalanceExtractorService.name);
 
   constructor(
+    @Inject(forwardRef(() => DailyBalanceService))
     protected readonly dailyBalanceService: DailyBalanceService,
     protected readonly stellarService: StellarService,
   ) {
