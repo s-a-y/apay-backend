@@ -11,6 +11,7 @@ import {BalanceMutationExtractorService, ExtractBalanceMutationMode} from "./bal
 import {DailyBalanceExtractorService, ExtractDailyBalanceMode} from "./daily-balance-extractor.service";
 import {StellarService} from "../stellar.service";
 import {AccountService} from "../account/account.service";
+import moment from 'moment';
 
 @Injectable()
 export class DailyBalanceService extends AbstractService<GetDailyBalancesDto, DailyBalance, DailyBalanceInterface> {
@@ -26,22 +27,27 @@ export class DailyBalanceService extends AbstractService<GetDailyBalancesDto, Da
     super();
   }
 
-  async isAccountInitilaized(accountId: string) {
+  async getAccountLastFetchedAt(accountId: string) {
     const account = await this.accountService.findOneByAddress(accountId);
     if (!account) {
       return false;
     }
-    if (!account.balanceFetcherDetails.initLoad) {
+    if (!account.balanceFetcherDetails.lastFetchedAt) {
       return false;
     }
-    return true;
+    return account.balanceFetcherDetails.lastFetchedAt;
   }
 
-  async markAccountInitialized(accountId: string) {
-    const balanceFetcherDetails = (await this.accountService.findOneByAddressOrReturnNew(accountId)).balanceFetcherDetails;
-    balanceFetcherDetails.initLoad = true;
-
-    return this.accountService.update(accountId, {balanceFetcherDetails});
+  async updateAccountLastFetchedAt(accountId: string) {
+    return this.accountService.findOneByAddressOrReturnNew(accountId)
+      .then((account) => {
+        return this.accountService.update(
+          accountId,
+          {
+            ...account,
+            balanceFetcherDetails: {...account.balanceFetcherDetails, lastFetchedAt: moment().toISOString()}
+          })
+      })
   }
 
   getItemsBuilder(input: GetDailyBalancesDto, repository?: Repository<DailyBalance>): SelectQueryBuilder<any> {
@@ -158,17 +164,8 @@ export class DailyBalanceService extends AbstractService<GetDailyBalancesDto, Da
         accountId,
         mode: ExtractDailyBalanceMode.CATCH_TAIL,
       });
-    }).then(() => {
-      return this.accountService.findOneByAddressOrReturnNew(accountId)
-        .then((account) => {
-          return this.accountService.update(
-            accountId,
-            {
-              ...account,
-              balanceFetcherDetails: {...account.balanceFetcherDetails, initLoad: true}
-            })
-        })
-    }).catch((error) => {
+    }).then(() => this.updateAccountLastFetchedAt(accountId))
+    .catch((error) => {
       this.logger.error(error);
     });
   }

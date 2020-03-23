@@ -8,6 +8,7 @@ import {GetBalanceMutationsDto} from './dto/get-balance-mutations.dto';
 import {BalanceMutationsService} from './balance-mutations.service';
 import {MyLoggerService} from '../my-logger.service';
 import moment from 'moment';
+import {EntitiesOrder} from "../app.interfaces";
 
 @Controller()
 export class BalanceController {
@@ -21,14 +22,23 @@ export class BalanceController {
 
   @Get('dailyBalances')
   async getDailyBalances(@Query() dto: GetDailyBalancesDto) {
-    if (!(await this.dailyBalanceService.isAccountInitilaized(dto.accountId))) {
+    const lastFetchedAt = await this.dailyBalanceService.getAccountLastFetchedAt(dto.accountId);
+
+    if (!lastFetchedAt || moment(lastFetchedAt) < moment().subtract(30, "second")) {
       await this.jobQueue.add(
         'syncDailyBalances',
         {
           accountId: dto.accountId,
           toDate: moment().subtract(1, 'day').toDate()
-      });
+        });
+    }
+
+    if (!lastFetchedAt) {
       throw new NotFoundException();
+    }
+
+    if (!dto.order) {
+      dto.order = { field: 'date', order: 'ASC' } as unknown as EntitiesOrder;
     }
     return this.dailyBalanceService.getPagedItems(dto);
   }

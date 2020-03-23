@@ -48,10 +48,6 @@ export interface RatesItem {
   createdAt: Date,
 }
 
-export interface BalanceFetcherDetails {
-  initLoad: boolean;
-}
-
 /**
  * Common interfaces
  */

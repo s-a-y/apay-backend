@@ -22,7 +22,7 @@ export class AccountService {
         if (!account) {
           account = new Account();
           account.address = address;
-          account.balanceFetcherDetails = {initLoad: false};
+          account.balanceFetcherDetails = {};
         }
         return account;
       });

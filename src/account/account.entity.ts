@@ -7,7 +7,6 @@ import {
   UpdateDateColumn,
   Unique
 } from 'typeorm';
-import {BalanceFetcherDetails} from "../app.interfaces";
 
 @Entity()
 @Unique('UQ_address', ['address'])
@@ -23,7 +22,7 @@ export class Account {
   address: string;
 
   @Column({ type: 'json', default: {}})
-  balanceFetcherDetails: BalanceFetcherDetails;
+  balanceFetcherDetails: any;
 
   @CreateDateColumn()
   createdAt: Date;
