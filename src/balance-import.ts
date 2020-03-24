@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import minimist from 'minimist';
-import {DailyBalanceService} from "./daily-balance.service";
+import {DailyBalanceService} from "./balance/daily-balance.service";
 
 function error(message) {
   console.log(`Error: ${message}`);

@@ -1,7 +1,7 @@
 import {IsDate, IsNotEmpty, IsOptional, ValidateNested} from 'class-validator';
 import {Transform, Type} from "class-transformer";
-import {EntitiesOrder, GetEntitiesInputInterface} from "../app.interfaces";
-import {AssetDto} from "./asset.dto";
+import {EntitiesOrder, GetEntitiesInputInterface} from "../../app.interfaces";
+import {AssetDto} from "../../dto/asset.dto";
 
 export class GetDailyBalancesDto implements GetEntitiesInputInterface {
   @IsOptional()

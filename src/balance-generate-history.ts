@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import minimist from 'minimist';
-import {DailyBalanceExtractorService, ExtractDailyBalanceMode} from "./daily-balance-extractor.service";
+import {DailyBalanceExtractorService, ExtractDailyBalanceMode} from "./balance/daily-balance-extractor.service";
 
 function error(message) {
   console.log(`Error: ${message}`);

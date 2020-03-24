@@ -1,15 +1,6 @@
 import BigNumber from 'bignumber.js';
 import {BalanceMutationType, OrderOption} from "./app.enums";
 
-export interface Balance {
-  id: string;
-  at: Date;
-  balances: [{
-    asset: Asset;
-    amount: BigNumber;
-  }]
-}
-
 export interface BalanceMutation {
   id: string,
   cursor: string,

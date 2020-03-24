@@ -8,6 +8,8 @@ import {RatesLog} from "./entities/rates-log.entity";
 import {RateHistory} from "./entities/rate-history.entity";
 import {RateHistoryService} from "./rate-history.service";
 
+jest.setTimeout(3000000);
+
 describe('RatesService', () => {
   let ratesService: RatesService;
   let rateHistoryService: RateHistoryService;
@@ -37,7 +39,7 @@ describe('RatesService', () => {
 
   describe('RatesService', () => {
     it('fetch', async () => {
-      expect(await rateHistoryService.fetchRateHistory(new Date('2019-12-20'))).toBe('TODO');
+      expect(await rateHistoryService.fetchRateHistory()).toBe('TODO');
     });
   });
 });

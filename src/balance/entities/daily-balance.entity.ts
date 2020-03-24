@@ -1,6 +1,6 @@
 import {Entity, Column, PrimaryGeneratedColumn, Generated, Unique, CreateDateColumn} from 'typeorm';
 import BigNumber from "bignumber.js";
-import {BigNumberToStringTransformer} from "../app.transformers";
+import {BigNumberToStringTransformer} from "../../app.transformers";
 
 @Entity()
 @Unique('UQ_accountId_asset_date',['accountId', 'asset', 'date'])

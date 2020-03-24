@@ -1,13 +1,13 @@
 import {Injectable} from '@nestjs/common';
 import {getRepository, Repository, SelectQueryBuilder} from "typeorm";
-import {AbstractService} from "./abstract.service";
+import {AbstractService} from "../abstract.service";
 import {InjectRepository} from "@nestjs/typeorm";
-import {OrderOption} from "./app.enums";
-import {MyLoggerService} from "./my-logger.service";
-import {BalanceMutation as BalanceMutationInterface} from "./app.interfaces";
+import {OrderOption} from "../app.enums";
+import {MyLoggerService} from "../my-logger.service";
+import {BalanceMutation as BalanceMutationInterface} from "../app.interfaces";
 import {BalanceMutation} from "./entities/balance-mutation.entity";
 import {GetBalanceMutationsDto} from "./dto/get-balance-mutations.dto";
-import {Asset} from "./app.interfaces";
+import {Asset} from "../app.interfaces";
 
 @Injectable()
 export class BalanceMutationsService extends AbstractService<GetBalanceMutationsDto, BalanceMutation, BalanceMutationInterface> {

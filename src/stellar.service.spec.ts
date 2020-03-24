@@ -4,15 +4,15 @@ import {HttpModule} from "@nestjs/common";
 import {ConfigModule, ConfigService} from "@nestjs/config";
 import configuration from "./config/configuration";
 import {TypeOrmModule} from "@nestjs/typeorm";
-import {BalanceMutationExtractorService, ExtractBalanceMutationMode} from "./balance-mutation-extractor.service";
+import {BalanceMutationExtractorService, ExtractBalanceMutationMode} from "./balance/balance-mutation-extractor.service";
 import {StellarService} from "./stellar.service";
 import StellarSdk from "stellar-sdk";
-import {DailyBalance} from "./entities/daily-balance.entity";
+import {DailyBalance} from "./balance/entities/daily-balance.entity";
 import {MyLoggerService} from "./my-logger.service";
-import {DailyBalanceExtractorService, ExtractDailyBalanceMode} from "./daily-balance-extractor.service";
-import {DailyBalanceService} from "./daily-balance.service";
-import {BalanceMutationsService} from "./balance-mutations.service";
-import {BalanceMutation} from "./entities/balance-mutation.entity";
+import {DailyBalanceExtractorService, ExtractDailyBalanceMode} from "./balance/daily-balance-extractor.service";
+import {DailyBalanceService} from "./balance/daily-balance.service";
+import {BalanceMutationsService} from "./balance/balance-mutations.service";
+import {BalanceMutation} from "./balance/entities/balance-mutation.entity";
 
 process.env.TZ = 'UTC';
 
