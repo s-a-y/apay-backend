@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { TxService } from './tx.service';
 import { StellarService } from '../stellar.service';
 import { StrKey } from 'stellar-sdk';
+import { BigNumber } from 'bignumber.js';
 
 @Processor('txs')
 export class TxsProcessor {
@@ -78,13 +79,14 @@ export class TxsProcessor {
       }
       this.logger.log(result);
 
-      tx.amountOut = path.destination_amount;
+      tx.amountOut = new BigNumber(path.destination_amount);
       tx.amountFee = tx.amountIn.minus(tx.amountOut);
       tx.txOut = result.hash;
       await this.txService.save(tx);
 
       done(null, result);
     } catch (err) {
+      this.logger.error(err);
       // throw err;
       done(err);
     }

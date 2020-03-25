@@ -62,6 +62,7 @@ export class StellarService {
     secretKeys.forEach((secret) => {
       tx.sign(Keypair.fromSecret(secret));
     });
+    this.logger.log(tx.toEnvelope().toXDR().toString('base64'));
 
     return await this.server.submitTransaction(tx);
   }
