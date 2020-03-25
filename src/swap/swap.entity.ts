@@ -61,6 +61,12 @@ export class Swap {
     length: 255,
     nullable: true,
   })
+  referral: string;
+
+  @Column({
+    length: 255,
+    nullable: true,
+  })
   addressIn: string;
 
   @Column({
