@@ -39,7 +39,7 @@ export abstract class AbstractService<I extends GetEntitiesInputInterface, T, M>
       endCursor = lastItem[cursorField];
 
       const mappedItems = await Promise.all(items.map(async (item: T) => {
-        return await this.mapPagedItems(item);
+        return await this.mapPagedItems(item, input);
       }));
       edges = mappedItems.map(item => {
         const cursor = item[cursorField];
@@ -50,7 +50,7 @@ export abstract class AbstractService<I extends GetEntitiesInputInterface, T, M>
     return {edges, hasNextPage, endCursor, totalCount};
   }
 
-  async mapPagedItems(v: T) {
+  async mapPagedItems(v: T, input?: I) {
     return await Promise.resolve(v as unknown as M);
   }
 

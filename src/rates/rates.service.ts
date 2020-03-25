@@ -2,12 +2,12 @@ import {HttpService, Injectable} from '@nestjs/common';
 import {ConfigService} from "@nestjs/config";
 import {RatesLog} from "./entities/rates-log.entity";
 import {getRepository, Repository, SelectQueryBuilder} from "typeorm";
-import {AbstractService} from "./abstract.service";
+import {AbstractService} from "../abstract.service";
 import {GetRatesLogDto} from "./dto/get-rates-log.dto";
-import {Rates, RatesItem} from "./app.interfaces";
+import {Rates, RatesItem} from "../app.interfaces";
 import {InjectRepository} from "@nestjs/typeorm";
-import {OrderOption} from "./app.enums";
-import {MyLoggerService} from "./my-logger.service";
+import {OrderOption, SupportedCurrency} from "../app.enums";
+import {MyLoggerService} from "../my-logger.service";
 
 @Injectable()
 export class RatesService extends AbstractService<GetRatesLogDto, RatesLog, RatesItem> {
@@ -70,10 +70,12 @@ export class RatesService extends AbstractService<GetRatesLogDto, RatesLog, Rate
     return builder;
   }
 
-  async mapPagedItems(log: RatesLog) {
+  async mapPagedItems(log: RatesLog, input: GetRatesLogDto) {
     const rates: Rates = {};
+    const baseCurrency = input.baseCurrency || SupportedCurrency.XDR;
+    const baseCurrencyRate = log.data.find(o => o.currency === baseCurrency).rate;
     log.data.forEach((rawRates)=> {
-      rates[rawRates.currency] = rawRates.rate;
+      rates[rawRates.currency] = rawRates.rate / baseCurrencyRate;
     });
     return Promise.resolve({
       id: log.id,

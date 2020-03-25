@@ -1,5 +1,5 @@
 import {Test, TestingModule} from '@nestjs/testing';
-import {RatesService} from "./rates.service";
+import {RatesService} from "./rates/rates.service";
 import {HttpModule} from "@nestjs/common";
 import {ConfigModule, ConfigService} from "@nestjs/config";
 import configuration from "./config/configuration";

@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import {RatesService} from "./rates.service";
 import {HttpModule} from "@nestjs/common";
 import {ConfigModule, ConfigService} from "@nestjs/config";
-import configuration from "./config/configuration";
+import configuration from "../config/configuration";
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {RatesLog} from "./entities/rates-log.entity";
 import {RateHistory} from "./entities/rate-history.entity";

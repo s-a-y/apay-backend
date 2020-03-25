@@ -1,7 +1,7 @@
 import {Entity, Column, PrimaryGeneratedColumn, Generated, CreateDateColumn} from 'typeorm';
-import {SupportedCurrency} from "../app.enums";
+import {SupportedCurrency} from "../../app.enums";
 import BigNumber from "bignumber.js";
-import {BigNumberToStringTransformer} from "../app.transformers";
+import {BigNumberToStringTransformer} from "../../app.transformers";
 
 @Entity()
 export class RateHistory {

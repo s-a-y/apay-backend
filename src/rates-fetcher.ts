@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import {RateHistoryService} from "./rate-history.service";
+import {RateHistoryService} from "./rates/rate-history.service";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
