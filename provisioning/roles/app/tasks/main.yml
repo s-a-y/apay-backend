@@ -35,5 +35,5 @@
     src: ../dist.tgz
     dest: /app/apay-backend
 
-#- name: Restart app
-#  command: "pm2 reload all"
+- name: Restart app
+  command: "pm2 reload all"

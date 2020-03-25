@@ -23,7 +23,12 @@ export class SwapService {
   }
 
   async getOrCreate(dto: SwapDto): Promise<Swap> {
-    const swap = await this.repo.findOne(dto);
+    const swap = await this.repo.findOne({
+      addressOut: dto.addressOut,
+      addressOutExtra: dto.addressOutExtra,
+      currencyIn: dto.currencyIn,
+      currencyOut: dto.currencyOut,
+    });
     if (swap) {
       return swap;
     } else {
