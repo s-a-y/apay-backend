@@ -1,4 +1,4 @@
-import { IsEnum, IsIn, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { IsEnum, IsIn, IsNotEmpty, IsNumber, IsNumberString, IsOptional } from 'class-validator';
 import { SupportedCurrency } from '../app.enums';
 import { Optional } from '@nestjs/common';
 
@@ -17,13 +17,13 @@ export class SwapDto {
   @IsIn(['in', 'out'])
   userInput: string;
   @IsNotEmpty()
-  @IsNumber()
+  @IsNumberString()
   amountIn: string;
   @IsNotEmpty()
-  @IsNumber()
+  @IsNumberString()
   amountOut: string;
-  @IsNotEmpty()
-  account: string;
+  @IsOptional()
+  account?: string;
   @IsOptional()
   ref?: string;
 }
