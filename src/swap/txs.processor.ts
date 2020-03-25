@@ -52,31 +52,31 @@ export class TxsProcessor {
 
       let path;
       let result;
-      if (tx.swap.userInput === 'out' && tx.swap.amountIn && tx.swap.amountIn.gte(tx.amountIn)) {
-        path = await this.stellarService.calculateSell(tx.currencyIn, tx.currencyOut, tx.swap.amountOut.toString());
-        this.logger.log(path);
-        result = await this.stellarService.pathPaymentStrictReceive({
-          currencyIn: tx.currencyIn,
-          currencyOut: tx.currencyOut,
-          amountIn: path.source_amount,
-          amountOut: path.destination_amount,
-          addressOut,
-          memo,
-          sequence: tx.sequence,
-        });
-      } else {
-        path = await this.stellarService.calculateBuy(tx.currencyIn, tx.amountIn.toString(), tx.currencyOut);
-        this.logger.log(path);
-        result = await this.stellarService.pathPaymentStrictSend({
-          currencyIn: tx.currencyIn,
-          currencyOut: tx.currencyOut,
-          amountIn: path.source_amount,
-          amountOut: path.destination_amount,
-          addressOut,
-          memo,
-          sequence: tx.sequence,
-        });
-      }
+      // if (tx.swap.userInput === 'out' && tx.swap.amountIn && tx.swap.amountIn.lt(tx.amountIn)) {
+      //   path = await this.stellarService.calculateSell(tx.currencyIn, tx.currencyOut, tx.swap.amountOut.toString());
+      //   this.logger.log(path);
+      //   result = await this.stellarService.pathPaymentStrictReceive({
+      //     currencyIn: tx.currencyIn,
+      //     currencyOut: tx.currencyOut,
+      //     amountIn: path.source_amount,
+      //     amountOut: path.destination_amount,
+      //     addressOut,
+      //     memo,
+      //     sequence: tx.sequence,
+      //   });
+      // } else {
+      path = await this.stellarService.calculateBuy(tx.currencyIn, tx.amountIn.dividedBy(1.005).toString(), tx.currencyOut);
+      this.logger.log(path);
+      result = await this.stellarService.pathPaymentStrictSend({
+        currencyIn: tx.currencyIn,
+        currencyOut: tx.currencyOut,
+        amountIn: path.source_amount,
+        amountOut: path.destination_amount,
+        addressOut,
+        memo,
+        sequence: tx.sequence,
+      });
+      // }
       this.logger.log(result);
 
       tx.amountOut = new BigNumber(path.destination_amount);

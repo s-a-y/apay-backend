@@ -31,7 +31,7 @@ export class TxService {
   enqueue(tx: Tx) {
     return this.queue.add(tx.id, {
       attempts: 20,
-      backoff: { type: 'exponential' },
+      backoff: 60000,
     });
   }
 }
