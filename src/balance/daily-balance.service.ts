@@ -144,6 +144,8 @@ export class DailyBalanceService extends AbstractService<GetDailyBalancesDto, Da
   async syncDailyBalances({toDate, accountId}: {toDate: Date, accountId: string}) {
     this.dailyBalanceExtractorService = new DailyBalanceExtractorService(this, this.stellarService);
 
+    this.logger.log('syncDailyBalances(): started');
+
     return this.balanceMutationExtractorService.extract({
       accountId,
       toDate,
@@ -165,7 +167,9 @@ export class DailyBalanceService extends AbstractService<GetDailyBalancesDto, Da
         mode: ExtractDailyBalanceMode.CATCH_TAIL,
       });
     }).then(() => this.updateAccountLastFetchedAt(accountId))
+    .then(() => this.logger.log('syncDailyBalances(): completed'))
     .catch((error) => {
+      this.logger.log('syncDailyBalances(): failed');
       this.logger.error(error);
     });
   }

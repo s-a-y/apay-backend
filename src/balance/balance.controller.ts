@@ -25,11 +25,12 @@ export class BalanceController {
     const lastFetchedAt = await this.dailyBalanceService.getAccountLastFetchedAt(dto.accountId);
 
     if (!lastFetchedAt || moment(lastFetchedAt) < moment().subtract(30, "second")) {
-      await this.jobQueue.add(
-        'syncDailyBalances',
-        {
+      this.logger.log('Schedule queue "syncDailyBalances"');
+      await this.scheduleJob({
           accountId: dto.accountId,
           toDate: moment().subtract(1, 'day').toDate()
+        }).catch((error) => {
+          this.logger.error(error);
         });
     }
 
@@ -50,7 +51,21 @@ export class BalanceController {
 
   @Get('syncDailyBalances')
   async syncDailyBalances(@Query() dto: SyncDailyBalancesDto) {
-    await this.jobQueue.add('syncDailyBalances', dto);
+    await this.scheduleJob(dto)
+      .catch((error) => {
+        this.logger.error(error);
+      });
     return {};
+  }
+
+  private async scheduleJob(opts: any) {
+    return this.jobQueue.add(
+      'syncDailyBalances',
+      opts,
+      {
+        attempts: 20,
+        backoff: { type: 'exponential' },
+      }
+    );
   }
 }
