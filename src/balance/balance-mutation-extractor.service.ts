@@ -1,14 +1,15 @@
 import StellarSdk, {ServerApi} from 'stellar-sdk';
-import {from, of, Subject} from "rxjs";
+import {from, interval, merge, of, Subject} from "rxjs";
 import {MyLoggerService} from "../my-logger.service";
 import {ConfigService} from "@nestjs/config";
 import {Injectable} from "@nestjs/common";
 import {BalanceMutation} from "./entities/balance-mutation.entity";
 import {BalanceMutationType, OrderOption} from "../app.enums";
 import BigNumber from "bignumber.js";
-import {timeoutWith} from "rxjs/operators";
+import {map, timeoutWith} from "rxjs/operators";
 import {BalanceMutationsService} from "./balance-mutations.service";
 import {GetBalanceMutationsDto} from "./dto/get-balance-mutations.dto";
+import moment from "moment";
 
 export enum ExtractBalanceMutationMode {
   FROM_TAIL = 'from-tail',
@@ -21,10 +22,13 @@ export interface ExtractBalanceMutationOptions {
   toDate?: Date,
   cursor?: string,
   reset?: boolean,
+  progressInterval?: number,
 }
 
 type FetchedEffectRecord = ServerApi.EffectRecord | null;
 const COMPLETED = null;
+const PROGRESS = 1;
+const PROGRESS_INTERVAL = 10000;
 
 @Injectable()
 export class BalanceMutationExtractorService {
@@ -44,12 +48,18 @@ export class BalanceMutationExtractorService {
     toDate,
     cursor,
     reset = false,
-  }: ExtractBalanceMutationOptions) {
+    progressInterval = PROGRESS_INTERVAL,
+  }: ExtractBalanceMutationOptions, progress?: (number) => Promise<any>) {
+    let fromDate: Date;
+    let currentDate: Date;
     const subject = new Subject<FetchedEffectRecord>();
-    const observable = from(subject)
-      .pipe(
-        timeoutWith(5000, of(COMPLETED))
-      );
+    const observable = merge(
+      from(subject)
+        .pipe(
+          timeoutWith(5000, of(COMPLETED))
+        ),
+      interval(progressInterval).pipe(map(() => PROGRESS)),
+    );
 
     this.logger.log({accountId, mode, toDate, log: 'extract(): started'});
 
@@ -73,20 +83,26 @@ export class BalanceMutationExtractorService {
           if (toDate) {
             this.logger.log(`extract(): catch up till date ${lastMutation.at.toISOString()}`);
           }
+          fromDate = new Date();
         }
         break;
       case ExtractBalanceMutationMode.FROM_TAIL:
+        if (!toDate) {
+          throw new Error('Bad `toDate`');
+        }
         if (!cursor && !reset) {
           lastMutation = await this.balanceMutationsService.getItemsBuilder({
             accountId, order: {field: 'externalId', order: OrderOption.ASC}
           } as GetBalanceMutationsDto).getOne();
           cursor = lastMutation ? lastMutation.externalCursor : null;
+          fromDate = lastMutation ? lastMutation.at : new Date();
           if (cursor) {
             this.logger.log(`extract(): used a cursor stored in the last mutation found in the db  ${cursor} (at: ${lastMutation.at})`);
           }
         }
         break;
     }
+    const maxProgressValue = moment(fromDate).subtract(toDate.getTime()).unix();
 
     const closeStream = this.initEffectsSubject(subject, {accountId, mode, toDate, cursor});
 
@@ -106,6 +122,13 @@ export class BalanceMutationExtractorService {
             return;
           }
 
+          if (value === PROGRESS) {
+            if (progress) {
+              await progress(moment(fromDate).subtract(currentDate.getTime()).unix() / maxProgressValue);
+            }
+            return;
+          }
+
           switch (mode) {
             case ExtractBalanceMutationMode.FROM_TAIL:
             case ExtractBalanceMutationMode.CATCH_TAIL:
@@ -115,6 +138,7 @@ export class BalanceMutationExtractorService {
               }
               break;
           }
+          currentDate = new Date(value.created_at);
           await this.processEffect(value);
         },
         (error) => {

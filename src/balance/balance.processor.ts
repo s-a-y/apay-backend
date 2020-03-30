@@ -16,6 +16,11 @@ export class BalanceProcessor {
 
   @Process('syncDailyBalances')
   async syncDailyBalances(job: Job<SyncDailyBalancesDto>) {
-    return this.dailyBalanceService.syncDailyBalances({accountId: job.data.accountId, toDate: new Date(job.data.toDate)});
+    return this.dailyBalanceService.syncDailyBalances(
+      {
+        accountId: job.data.accountId,
+        toDate: new Date(job.data.toDate)
+      },
+    );
   }
 }

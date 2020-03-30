@@ -28,7 +28,7 @@ export class BalanceController {
       this.logger.log('Schedule queue "syncDailyBalances"');
       await this.scheduleJob({
           accountId: dto.accountId,
-          toDate: moment().subtract(1, 'day').toDate()
+          toDate: moment().subtract(1, 'month').toDate()
         }).catch((error) => {
           this.logger.error(error);
         });

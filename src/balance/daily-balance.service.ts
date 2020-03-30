@@ -72,8 +72,11 @@ export class DailyBalanceService extends AbstractService<GetDailyBalancesDto, Da
       builder.andWhere('daily_balance.accountId = :accountId', {accountId: input.accountId});
     }
 
-    if (input.asset && input.asset.code && input.asset.issuer) {
-      builder.andWhere('daily_balance.asset = :asset', {asset: `${input.asset.code} ${input.asset.issuer}`});
+    if (input.asset && input.asset.code) {
+      builder.andWhere(
+        'daily_balance.asset = :asset',
+        {asset: input.asset.code === 'native' ? 'native' : `${input.asset.code} ${input.asset.issuer}`}
+      );
     }
 
     if (input.createdAt) {
@@ -142,15 +145,34 @@ export class DailyBalanceService extends AbstractService<GetDailyBalancesDto, Da
   }
 
   async syncDailyBalances({toDate, accountId}: {toDate: Date, accountId: string}) {
+    let currentProgress = 0;
+
     this.dailyBalanceExtractorService = new DailyBalanceExtractorService(this, this.stellarService);
 
     this.logger.log('syncDailyBalances(): started');
 
-    return this.balanceMutationExtractorService.extract({
-      accountId,
-      toDate,
-      mode: ExtractBalanceMutationMode.FROM_TAIL,
-    }).then(() => {
+    return this.balanceMutationExtractorService.extract(
+      {
+        accountId,
+        toDate,
+        mode: ExtractBalanceMutationMode.FROM_TAIL,
+        progressInterval: 10000,
+      },
+      async (progress: number) => {
+        if ((progress - currentProgress) < 0.1) {
+          this.logger.log('Mutations are fetched to slow. Launch daily balances update.');
+          return this.dailyBalanceExtractorService.extract({
+            accountId,
+            toDate,
+            mode: ExtractDailyBalanceMode.FROM_TAIL,
+          })
+            .then(() => this.updateAccountLastFetchedAt(accountId))
+            .catch(() => true);
+        }
+        currentProgress = progress;
+        return Promise.resolve();
+      }
+    ).then(() => {
       return this.balanceMutationExtractorService.extract({
         accountId,
         mode: ExtractBalanceMutationMode.CATCH_TAIL,
