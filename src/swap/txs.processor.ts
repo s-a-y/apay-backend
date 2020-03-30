@@ -72,7 +72,7 @@ export class TxsProcessor {
         currencyIn: tx.currencyIn,
         currencyOut: tx.currencyOut,
         amountIn: path.source_amount,
-        amountOut: path.destination_amount,
+        amountOut: new BigNumber(path.destination_amount).minus(1e-7).toFixed(7),
         addressOut,
         memo,
         channel: tx.channel,
