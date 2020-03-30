@@ -29,7 +29,7 @@ export class TxsProcessor {
         const rand = Math.random() * this.config.get('channelAccounts').length;
         tx.channel = this.config.get('channelAccounts')[Math.floor(rand)];
         const source = await this.stellarService.loadAccount(tx.channel);
-        tx.sequence = new BigNumber(source.sequence).plus(1).toString();
+        tx.sequence = source.sequence;
         tx = await this.txService.save(tx);
       }
       this.logger.log(tx);
@@ -72,7 +72,7 @@ export class TxsProcessor {
         currencyIn: tx.currencyIn,
         currencyOut: tx.currencyOut,
         amountIn: path.source_amount,
-        amountOut: new BigNumber(path.destination_amount).minus(1e-7).toFixed(7),
+        amountOut: path.destination_amount,
         addressOut,
         memo,
         channel: tx.channel,
