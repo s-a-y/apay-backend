@@ -26,9 +26,10 @@ export class TxsProcessor {
       let tx = await this.txService.find(job.data);
       this.logger.log(tx);
       if (!tx.channel || !tx.sequence) {
-        tx.channel = this.config.get('swapAccount');
+        const rand = Math.random() * this.config.get('channelAccounts').length;
+        tx.channel = this.config.get('channelAccounts')[Math.floor(rand)];
         const source = await this.stellarService.loadAccount(tx.channel);
-        tx.sequence = source.sequence;
+        tx.sequence = new BigNumber(source.sequence).plus(1).toString();
         tx = await this.txService.save(tx);
       }
       this.logger.log(tx);
@@ -65,7 +66,7 @@ export class TxsProcessor {
       //     sequence: tx.sequence,
       //   });
       // } else {
-      path = await this.stellarService.calculateBuy(tx.currencyIn, tx.amountIn.dividedBy(1.005).toString(), tx.currencyOut);
+      path = await this.stellarService.calculateBuy(tx.currencyIn, tx.amountIn.dividedBy(1.005).toFixed(7), tx.currencyOut);
       this.logger.log(path);
       result = await this.stellarService.pathPaymentStrictSend({
         currencyIn: tx.currencyIn,
@@ -74,6 +75,7 @@ export class TxsProcessor {
         amountOut: path.destination_amount,
         addressOut,
         memo,
+        channel: tx.channel,
         sequence: tx.sequence,
       });
       // }

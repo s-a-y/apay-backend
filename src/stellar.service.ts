@@ -150,24 +150,27 @@ export class StellarService {
     });
   }
 
-  pathPaymentStrictSend({ currencyIn, currencyOut, amountIn, amountOut, addressOut, memo, sequence }) {
+  pathPaymentStrictSend({ currencyIn, currencyOut, amountIn, amountOut, addressOut, memo, channel, sequence }) {
     const knownIssuers = {
       XLM: null,
       BTC: 'GAUTUYY2THLF7SGITDFMXJVYH3LHDSMGEAKSBU267M2K7A3W543CKUEF',
     };
     const currencyInIssuer = knownIssuers[currencyIn];
     const currencyOutIssuer = knownIssuers[currencyOut];
+    const sourceKeypair = StellarSdk.Keypair.fromSecret(this.configService.get('swapAccountSecret'));
     return this.buildAndSubmitTx(
-      this.configService.get('swapAccountSecret'), // channel secret actually
+      process.env[`STELLAR_SECRET_${channel}`], // channel secret actually
       [StellarSdk.Operation.pathPaymentStrictSend({
         sendAsset: new Asset(currencyIn, currencyInIssuer),
         sendAmount: amountIn,
         destination: addressOut,
         destAsset: new Asset(currencyOut, currencyOutIssuer),
         destMin: amountOut,
+        source: sourceKeypair.publicKey(),
       })], {
         sequence,
         memo: (memo ? Memo.id(memo) : null),
+        secretKeys: [sourceKeypair.secret()],
     });
   }
 }

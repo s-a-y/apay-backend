@@ -4,6 +4,10 @@ export default () => ({
   apayBaseUrl: 'https://test.apay.io',
   swapAccount: process.env.SWAP_ACCOUNT,
   swapAccountSecret: process.env.SWAP_ACCOUNT_SECRET,
+  channelAccounts: [
+    'GBXLPL5SYAYBMIEGYBGYNAXVDTFSBOVCFHS3DR7BPBI7E7ORUTT6C4ST',
+    'GDIO536MUORCLTHRWNAWITLAH3T6QUZWVEPHVJRTHECX6VH2LYRGP3YY',
+  ],
   nomicsApiKey: process.env.NOMICS_API_KEY,
   ratesFetcherInterval: process.env.RATES_FETCHER_INTERVAL || 60 * 60 * 1000, // 1hr
   database: {
