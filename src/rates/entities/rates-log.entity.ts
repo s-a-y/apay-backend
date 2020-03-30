@@ -1,5 +1,5 @@
 import {Entity, Column, PrimaryGeneratedColumn, Generated, CreateDateColumn} from 'typeorm';
-import {RatesLogData} from "../app.interfaces";
+import {RatesLogData} from "../../app.interfaces";
 
 @Entity()
 export class RatesLog {

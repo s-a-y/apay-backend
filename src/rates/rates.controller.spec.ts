@@ -1,18 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AppController } from './app.controller';
-import {StellarService} from "./stellar.service";
+import { RatesController } from './rates.controller';
+import {StellarService} from "../stellar.service";
 import {GetRatesLogDto} from "./dto/get-rates-log.dto";
 
-describe('AppController', () => {
-  let appController: AppController;
+describe('RatesController', () => {
+  let appController: RatesController;
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
-      controllers: [AppController],
+      controllers: [RatesController],
       providers: [StellarService],
     }).compile();
 
-    appController = app.get<AppController>(AppController);
+    appController = app.get<RatesController>(RatesController);
   });
 
   describe('root', () => {

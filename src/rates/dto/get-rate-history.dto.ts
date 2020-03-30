@@ -1,8 +1,13 @@
-import {IsDate, IsOptional} from 'class-validator';
+import {IsDate, IsEnum, IsOptional} from 'class-validator';
 import {Transform} from "class-transformer";
-import {EntitiesOrder, GetEntitiesInputInterface} from "../app.interfaces";
+import {EntitiesOrder, GetEntitiesInputInterface} from "../../app.interfaces";
+import {SupportedCurrency} from "../../app.enums";
 
 export class GetRateHistoryDto implements GetEntitiesInputInterface {
+  @IsOptional()
+  @IsEnum(SupportedCurrency)
+  baseCurrency?: SupportedCurrency;
+
   @IsOptional()
   id: string;
 
@@ -27,6 +32,7 @@ export class GetRateHistoryDto implements GetEntitiesInputInterface {
   @Transform(value => new Date(value))
   toCreatedAt: Date;
 
+  @IsEnum(SupportedCurrency)
   currency: string;
 
   @IsOptional()

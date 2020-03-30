@@ -1,14 +1,14 @@
 import {HttpService, Injectable} from '@nestjs/common';
 import {ConfigService} from "@nestjs/config";
 import {getRepository, Repository, SelectQueryBuilder} from "typeorm";
-import {AbstractService} from "./abstract.service";
-import {RateHistoryData} from "./app.interfaces";
+import {AbstractService} from "../abstract.service";
+import {RateHistoryData} from "../app.interfaces";
 import {InjectRepository} from "@nestjs/typeorm";
-import {OrderOption, SupportedCurrency} from "./app.enums";
+import {OrderOption, SupportedCurrency} from "../app.enums";
 import {RateHistory} from "./entities/rate-history.entity";
 import { from } from 'rxjs';
 import {flatMap, map, mergeMap} from "rxjs/operators";
-import {MyLoggerService} from "./my-logger.service";
+import {MyLoggerService} from "../my-logger.service";
 import {GetRateHistoryDto} from "./dto/get-rate-history.dto";
 import BigNumber from "bignumber.js";
 
@@ -43,27 +43,27 @@ export class RateHistoryService extends AbstractService<GetRateHistoryDto, RateH
     }
 
     if (input.createdAt) {
-      builder.andWhere('rate_history.createdAt = :value', { value: input.createdAt });
+      builder.andWhere('rate_history.createdAt = :createdAt', { createdAt: input.createdAt });
     }
 
     if (input.fromCreatedAt) {
-      builder.andWhere('rate_history.createdAt >= :value', { value: input.fromCreatedAt });
+      builder.andWhere('rate_history.createdAt >= :fromCreatedAt', { fromCreatedAt: input.fromCreatedAt });
     }
 
     if (input.toCreatedAt) {
-      builder.andWhere('rate_history.createdAt <= :value', { value: input.toCreatedAt });
+      builder.andWhere('rate_history.createdAt <= :toCreatedAt', { toCreatedAt: input.toCreatedAt });
     }
 
     if (input.at) {
-      builder.andWhere('rate_history.at = :value', { value: input.at });
+      builder.andWhere('rate_history.at = :at', { at: input.at });
     }
 
     if (input.fromAt) {
-      builder.andWhere('rate_history.at >= :value', { value: input.fromAt });
+      builder.andWhere('rate_history.at >= :fromAt', { fromAt: input.fromAt });
     }
 
     if (input.toAt) {
-      builder.andWhere('rate_history.at <= :value', { value: input.toAt });
+      builder.andWhere('rate_history.at <= :toAt', { toAt: input.toAt });
     }
 
     if (input.id) {
