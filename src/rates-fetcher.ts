@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import {RateHistoryService} from "./rates/rate-history.service";
+import configuration from "./config/configuration";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -8,6 +9,6 @@ async function bootstrap() {
   await ratesService.fetchRateHistory();
   setInterval(async () => {
     await ratesService.fetchRateHistory();
-  }, 300000);
+  }, +configuration().ratesFetcherInterval);
 }
 bootstrap();

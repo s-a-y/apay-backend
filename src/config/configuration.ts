@@ -5,6 +5,7 @@ export default () => ({
   swapAccount: process.env.SWAP_ACCOUNT,
   swapAccountSecret: process.env.SWAP_ACCOUNT_SECRET,
   nomicsApiKey: process.env.NOMICS_API_KEY,
+  ratesFetcherInterval: process.env.RATES_FETCHER_INTERVAL || 60 * 60 * 1000, // 1hr
   database: {
     type: process.env.TYPEORM_TYPE || 'postgres',
     url: process.env.TYPEORM_URL || process.env.DATABASE_URL ,
