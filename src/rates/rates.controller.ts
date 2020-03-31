@@ -5,6 +5,7 @@ import {RateHistoryService} from "./rate-history.service";
 import {GetRateHistoryDto} from "./dto/get-rate-history.dto";
 import {MyLoggerService} from "../my-logger.service";
 import {SupportedCurrency} from "../app.enums";
+import {EntitiesOrder} from "../app.interfaces";
 
 @Controller()
 export class RatesController {
@@ -16,11 +17,19 @@ export class RatesController {
 
   @Get('rates')
   getRates(@Query() dto: GetRatesLogDto) {
+    if (!dto.order) {
+      dto.order = { field: 'at', order: 'ASC' } as unknown as EntitiesOrder;
+    }
+
     return this.ratesService.getPagedItems(dto);
   }
 
   @Get('rateHistory')
   async getRateHistory(@Query() dto: GetRateHistoryDto) {
+    if (!dto.order) {
+      dto.order = { field: 'at', order: 'ASC' } as unknown as EntitiesOrder;
+    }
+
     const history = await this.rateHistoryService.getPagedItems(dto);
     dto.currency = dto.baseCurrency || SupportedCurrency.XDR;
     const baseHistory = await this.rateHistoryService.getPagedItems(dto);

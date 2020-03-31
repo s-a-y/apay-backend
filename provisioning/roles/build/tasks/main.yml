@@ -5,7 +5,7 @@
     executable: /bin/bash
 
 - name: Build
-  shell: "source ~/.profile && npm run build"
+  shell: "source ~/.profile && npm run build:all"
   args:
     executable: /bin/bash
 
