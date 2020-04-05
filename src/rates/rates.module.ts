@@ -4,7 +4,6 @@ import {RateHistory} from "./entities/rate-history.entity";
 import {RatesLog} from "./entities/rates-log.entity";
 import {RatesController} from "./rates.controller";
 import {RatesService} from "./rates.service";
-import {RateHistoryService} from "./rate-history.service";
 
 @Module({
   controllers: [
@@ -19,11 +18,9 @@ import {RateHistoryService} from "./rate-history.service";
   ],
   exports: [
     RatesService,
-    RateHistoryService,
   ],
   providers: [
     RatesService,
-    RateHistoryService,
   ],
 })
 export class RatesModule {}

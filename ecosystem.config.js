@@ -33,7 +33,8 @@ module.exports = {
     script: 'dist/rates-fetcher.js',
 
     instances: 1,
-    autorestart: true,
+    autorestart: false,
+    cron_restart: '0 * * * *',
     watch: false,
     max_memory_restart: '1G',
     env: {
