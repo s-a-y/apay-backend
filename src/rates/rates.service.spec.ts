@@ -1,5 +1,3 @@
-import {RateHistory} from "./entities/rate-history.entity";
-
 process.env.TZ = 'UTC';
 
 import { Test, TestingModule } from '@nestjs/testing';

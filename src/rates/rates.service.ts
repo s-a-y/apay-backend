@@ -42,23 +42,23 @@ export class RatesService extends AbstractService<GetRatesLogDto, RatesLog, Rate
     }
 
     if (input.createdAt) {
-      builder.andWhere('rates_log.createdAt = :value', { value: input.createdAt });
+      builder.andWhere('rates_log.createdAt = :createdAt', { createdAt: input.createdAt });
     }
 
     if (input.fromCreatedAt) {
-      builder.andWhere('rates_log.createdAt >= :value', { value: input.fromCreatedAt });
+      builder.andWhere('rates_log.createdAt >= :fromCreatedAt', { fromCreatedAt: input.fromCreatedAt });
     }
 
     if (input.toCreatedAt) {
-      builder.andWhere('rates_log.createdAt <= :value', { value: input.toCreatedAt });
+      builder.andWhere('rates_log.createdAt <= :toCreatedAt', { toCreatedAt: input.toCreatedAt });
     }
 
     if (input.at) {
-      builder.andWhere('rates_log.at = :value', { value: input.at });
+      builder.andWhere('rates_log.at = :at', { at: input.at });
     }
 
     if (input.fromAt) {
-      builder.andWhere('rates_log.at >= :value', { value: input.fromAt });
+      builder.andWhere('rates_log.at >= :fromAt', { fromAt: input.fromAt });
     }
 
     if (input.toAt) {
@@ -75,7 +75,9 @@ export class RatesService extends AbstractService<GetRatesLogDto, RatesLog, Rate
   async mapPagedItems(log: RatesLog, input: GetRatesLogDto) {
     const rates: Rates = {};
     Object.values(SupportedCurrency).forEach((key)=> {
-      rates[key] = new BigNumber(log.data[key]);
+      if (log.data[key]) {
+        rates[key] = new BigNumber(log.data[key]);
+      }
     });
     return Promise.resolve({
       id: log.id,
@@ -87,9 +89,13 @@ export class RatesService extends AbstractService<GetRatesLogDto, RatesLog, Rate
 
   async fetchRates() {
     const rates = await this.fetchFromStellarTicker();
+    const lastRatesEntity = await this.entitiesRepository.createQueryBuilder().orderBy('at', OrderOption.DESC).getOne();
+    const lastRates = lastRatesEntity ? lastRatesEntity.data : {};
     const log = new RatesLog();
     log.at = rates.at;
-    log.data = rates.data;
+    // The idea is that rates for some currencies do not always available while we requests stellar ticker
+    // so we should take the rates values from previous responses
+    log.data = {...lastRates, ...rates.data};
     return await this.saveRatesLog(log);
   }
 
@@ -100,7 +106,8 @@ export class RatesService extends AbstractService<GetRatesLogDto, RatesLog, Rate
           at: response.data.generated_at_rfc3339,
           data: response.data.pairs
             .filter((o) => o.name.search('XLM_') !== -1)
-            .map((o) => ({[o.name.substr(4)]: o.price}))
+            // Convert received value to rate with base=XLM
+            .map((o) => ({[o.name.substr(4)]: new BigNumber(1).div(o.price)}))
             .reduce((acc, o) => ({...acc, ...o}), {})
         };
       })
