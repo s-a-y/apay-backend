@@ -71,6 +71,7 @@ export class StellarService {
     const builder = this.server
       .payments()
       .forAccount(account)
+      .cursor('now')
       .join('transactions');
 
     // const client = this.redisService.getClient();

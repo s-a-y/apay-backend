@@ -2,11 +2,13 @@ import { Body, Controller, InternalServerErrorException, Post } from '@nestjs/co
 import { SwapDto } from './swap.dto';
 import { SwapService } from './swap.service';
 import { SwapResponseDto } from './swap-response.dto';
+import { TxService } from './tx.service';
 
 @Controller('swap')
 export class SwapController {
   constructor(
-    private readonly swapService: SwapService
+    private readonly swapService: SwapService,
+    private readonly txService: TxService,
   ) {
   }
 
@@ -22,5 +24,10 @@ export class SwapController {
       addressIn: swap.addressIn,
       addressInExtra: (['XLM', 'XDR'].includes(dto.currencyIn) ? swap.id.toString() : null),
     } as SwapResponseDto;
+  }
+
+  @Post('retry')
+  async retry(@Body() dto): Promise<any> {
+    return this.txService.enqueue(dto);
   }
 }
