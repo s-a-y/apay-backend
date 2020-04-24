@@ -82,7 +82,7 @@ export class TxsProcessor {
       this.logger.log(result);
 
       tx.amountOut = new BigNumber(path.destination_amount);
-      tx.amountFee = tx.amountIn.minus(tx.amountOut);
+      tx.amountFee = tx.amountIn.minus(path.source_amount);
       tx.txOut = result.hash;
       await this.txService.save(tx);
 
