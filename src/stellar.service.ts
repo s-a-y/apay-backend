@@ -12,11 +12,6 @@ export class StellarService {
   private server;
   private networkPassphrase: string;
 
-  private knownIssuers = {
-    XLM: null,
-    BTC: 'GAUTUYY2THLF7SGITDFMXJVYH3LHDSMGEAKSBU267M2K7A3W543CKUEF',
-  };
-
   constructor(
     private readonly configService: ConfigService,
   ) {
@@ -104,8 +99,8 @@ export class StellarService {
 
   async calculateSell(currencyIn: string, currencyOut: string, amountOut: string) {
     const result = await this.server.strictReceivePaths(
-      [new Asset(currencyIn, this.knownIssuers[currencyIn])],
-      new Asset(currencyOut, this.knownIssuers[currencyOut]),
+      [new Asset(currencyIn, this.configService.get('stellar').knownIssuers[currencyIn])],
+      new Asset(currencyOut, this.configService.get('stellar').knownIssuers[currencyOut]),
       amountOut,
     ).call();
     const records = filter(result.records, (record) => record.path.length <= 1);
@@ -120,9 +115,9 @@ export class StellarService {
 
   async calculateBuy(currencyIn: string, amountIn: string, currencyOut: string) {
     const result = await this.server.strictSendPaths(
-      new Asset(currencyIn, this.knownIssuers[currencyIn]),
+      new Asset(currencyIn, this.configService.get('stellar').knownIssuers[currencyIn]),
       amountIn,
-      [new Asset(currencyOut, this.knownIssuers[currencyOut])],
+      [new Asset(currencyOut, this.configService.get('stellar').knownIssuers[currencyOut])],
     ).call();
     const records = filter(result.records, (record) => record.path.length <= 1);
     if (records.length > 0) {
@@ -135,8 +130,8 @@ export class StellarService {
   }
 
   pathPaymentStrictReceive({ currencyIn, currencyOut, amountIn, amountOut, addressOut, memo, sequence }) {
-    const currencyInIssuer = this.knownIssuers[currencyIn];
-    const currencyOutIssuer = this.knownIssuers[currencyOut];
+    const currencyInIssuer = this.configService.get('stellar').knownIssuers[currencyIn];
+    const currencyOutIssuer = this.configService.get('stellar').knownIssuers[currencyOut];
     return this.buildAndSubmitTx(
       this.configService.get('swapAccountSecret'), // channel secret actually
       [StellarSdk.Operation.pathPaymentStrictReceive({
@@ -152,21 +147,8 @@ export class StellarService {
   }
 
   pathPaymentStrictSend({ currencyIn, currencyOut, amountIn, amountOut, addressOut, memo, channel, sequence }) {
-    const knownIssuers = {
-      XLM: null,
-      BTC: 'GAUTUYY2THLF7SGITDFMXJVYH3LHDSMGEAKSBU267M2K7A3W543CKUEF',
-      USDT: 'GCQTGZQQ5G4PTM2GL7CDIFKUBIPEC52BROAQIAPW53XBRJVN6ZJVTG6V',
-      LTC: 'GC5LOR3BK6KIOK7GKAUD5EGHQCMFOGHJTC7I3ELB66PTDFXORC2VM5LP',
-      ETH: 'GBDEVU63Y6NTHJQQZIKVTC23NWLQVP3WJ2RI2OTSJTNYOIGICST6DUXR',
-      BAT: 'GBDEVU63Y6NTHJQQZIKVTC23NWLQVP3WJ2RI2OTSJTNYOIGICST6DUXR',
-      LINK: 'GBDEVU63Y6NTHJQQZIKVTC23NWLQVP3WJ2RI2OTSJTNYOIGICST6DUXR',
-      OMG: 'GBDEVU63Y6NTHJQQZIKVTC23NWLQVP3WJ2RI2OTSJTNYOIGICST6DUXR',
-      REP: 'GBDEVU63Y6NTHJQQZIKVTC23NWLQVP3WJ2RI2OTSJTNYOIGICST6DUXR',
-      ZRX: 'GBDEVU63Y6NTHJQQZIKVTC23NWLQVP3WJ2RI2OTSJTNYOIGICST6DUXR',
-      KIN: 'GBDEVU63Y6NTHJQQZIKVTC23NWLQVP3WJ2RI2OTSJTNYOIGICST6DUXR',
-    };
-    const currencyInIssuer = knownIssuers[currencyIn];
-    const currencyOutIssuer = knownIssuers[currencyOut];
+    const currencyInIssuer = this.configService.get('stellar').knownIssuers[currencyIn];
+    const currencyOutIssuer = this.configService.get('stellar').knownIssuers[currencyOut];
     const sourceKeypair = StellarSdk.Keypair.fromSecret(this.configService.get('swapAccountSecret'));
     return this.buildAndSubmitTx(
       process.env[`STELLAR_SECRET_${channel}`], // channel secret actually
