@@ -40,7 +40,7 @@ export class TxsProcessor {
         addressOut = tx.swap.addressOut;
       } else {
         const response = await this.httpService.post(this.config.get('apayBaseUrl')
-          + '/transactions/withdraw/non-interactive', {
+          + '/withdraw', {
           type: 'crypto',
           dest: tx.swap.addressOut,
           asset_code: tx.currencyOut,
@@ -53,36 +53,39 @@ export class TxsProcessor {
 
       let path;
       let result;
-      // if (tx.swap.userInput === 'out' && tx.swap.amountIn && tx.swap.amountIn.lt(tx.amountIn)) {
-      //   path = await this.stellarService.calculateSell(tx.currencyIn, tx.currencyOut, tx.swap.amountOut.toString());
-      //   this.logger.log(path);
-      //   result = await this.stellarService.pathPaymentStrictReceive({
-      //     currencyIn: tx.currencyIn,
-      //     currencyOut: tx.currencyOut,
-      //     amountIn: path.source_amount,
-      //     amountOut: path.destination_amount,
-      //     addressOut,
-      //     memo,
-      //     sequence: tx.sequence,
-      //   });
-      // } else {
-      path = await this.stellarService.calculateBuy(tx.currencyIn, tx.amountIn.dividedBy(1.005).toFixed(7), tx.currencyOut);
-      this.logger.log(path);
-      result = await this.stellarService.pathPaymentStrictSend({
-        currencyIn: tx.currencyIn,
-        currencyOut: tx.currencyOut,
-        amountIn: path.source_amount,
-        amountOut: path.destination_amount,
-        addressOut,
-        memo,
-        channel: tx.channel,
-        sequence: tx.sequence,
-      });
-      // }
-      this.logger.log(result);
+      if (tx.swap.userInput === 'out' && tx.swap.amountIn && tx.swap.amountIn.lt(tx.amountIn)) {
+        path = await this.stellarService.calculateSell(tx.currencyIn, tx.currencyOut, tx.swap.amountOut.toString());
+        this.logger.log(path);
+        result = await this.stellarService.pathPaymentStrictReceive({
+          currencyIn: tx.currencyIn,
+          currencyOut: tx.currencyOut,
+          amountIn: tx.amountIn.toFixed(7),
+          amountOut: path.destination_amount,
+          addressOut,
+          memo,
+          channel: tx.channel,
+          sequence: tx.sequence,
+        });
 
-      tx.amountOut = new BigNumber(path.destination_amount);
-      tx.amountFee = tx.amountIn.minus(path.source_amount);
+        tx.amountOut = tx.swap.amountOut;
+      } else {
+        path = await this.stellarService.calculateBuy(tx.currencyIn, tx.amountIn.toFixed(7), tx.currencyOut);
+        const destAmount = new BigNumber(path.destination_amount).dividedBy(1.005);
+        this.logger.log(path);
+        result = await this.stellarService.pathPaymentStrictSend({
+          currencyIn: tx.currencyIn,
+          currencyOut: tx.currencyOut,
+          amountIn: path.source_amount,
+          amountOut: destAmount.toFixed(7),
+          addressOut,
+          memo,
+          channel: tx.channel,
+          sequence: tx.sequence,
+        });
+        this.logger.log(result);
+
+        tx.amountOut = destAmount;
+      }
       tx.txOut = result.hash;
       await this.txService.save(tx);
 

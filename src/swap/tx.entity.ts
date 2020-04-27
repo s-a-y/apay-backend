@@ -61,6 +61,9 @@ export class Tx {
   @Column({length: 255, nullable: true})
   txOut?: string; // can be updated once
 
+  @Column({length: 255, nullable: false})
+  addressFrom?: string;
+
   @Column({
     length: 255,
     nullable: true,

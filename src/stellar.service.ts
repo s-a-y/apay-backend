@@ -59,7 +59,11 @@ export class StellarService {
     });
     this.logger.log(tx.toEnvelope().toXDR().toString('base64'));
 
-    return await this.server.submitTransaction(tx);
+    try {
+      return await this.server.submitTransaction(tx);
+    } catch (err) {
+      this.logger.error(err);
+    }
   }
 
   async listenToPayments(account: string, callback: (op) => Promise<any>) {
@@ -129,11 +133,12 @@ export class StellarService {
     }
   }
 
-  pathPaymentStrictReceive({ currencyIn, currencyOut, amountIn, amountOut, addressOut, memo, sequence }) {
+  pathPaymentStrictReceive({ currencyIn, currencyOut, amountIn, amountOut, addressOut, memo, channel, sequence }) {
     const currencyInIssuer = this.configService.get('stellar').knownIssuers[currencyIn];
     const currencyOutIssuer = this.configService.get('stellar').knownIssuers[currencyOut];
+    const sourceKeypair = StellarSdk.Keypair.fromSecret(this.configService.get('swapAccountSecret'));
     return this.buildAndSubmitTx(
-      this.configService.get('swapAccountSecret'), // channel secret actually
+      process.env[`STELLAR_SECRET_${channel}`],
       [StellarSdk.Operation.pathPaymentStrictReceive({
         sendAsset: new Asset(currencyIn, currencyInIssuer),
         sendMax: amountIn,
@@ -142,7 +147,9 @@ export class StellarService {
         destAmount: amountOut,
       })], {
         sequence,
-        memo: (memo ? Memo.id(memo) : null),
+        // tslint:disable-next-line:triple-equals
+        memo: (memo ? (parseInt(memo, 10) == memo ? Memo.id(memo) : Memo.text(memo)) : null),
+        secretKeys: [sourceKeypair.secret()],
     });
   }
 
@@ -151,7 +158,7 @@ export class StellarService {
     const currencyOutIssuer = this.configService.get('stellar').knownIssuers[currencyOut];
     const sourceKeypair = StellarSdk.Keypair.fromSecret(this.configService.get('swapAccountSecret'));
     return this.buildAndSubmitTx(
-      process.env[`STELLAR_SECRET_${channel}`], // channel secret actually
+      process.env[`STELLAR_SECRET_${channel}`],
       [StellarSdk.Operation.pathPaymentStrictSend({
         sendAsset: new Asset(currencyIn, currencyInIssuer),
         sendAmount: amountIn,
@@ -161,7 +168,8 @@ export class StellarService {
         source: sourceKeypair.publicKey(),
       })], {
         sequence,
-        memo: (memo ? Memo.id(memo) : null),
+        // tslint:disable-next-line:triple-equals
+        memo: (memo ? (parseInt(memo, 10) == memo ? Memo.id(memo) : Memo.text(memo)) : null),
         secretKeys: [sourceKeypair.secret()],
     });
   }

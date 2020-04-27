@@ -30,8 +30,7 @@ export class TxService {
 
   enqueue(tx: Tx) {
     return this.queue.add(tx.id, {
-      attempts: 20,
-      backoff: 60000,
+      attempts: 1,
     });
   }
 }

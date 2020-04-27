@@ -1,7 +1,7 @@
-import { Networks } from "stellar-sdk";
+import { Networks } from 'stellar-sdk';
 import * as fs from 'fs';
 export default () => ({
-  apayBaseUrl: 'https://test.apay.io',
+  apayBaseUrl: 'https://api.apay.io/api',
   swapAccount: process.env.SWAP_ACCOUNT,
   swapAccountSecret: process.env.SWAP_ACCOUNT_SECRET,
   channelAccounts: [

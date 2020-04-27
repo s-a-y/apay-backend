@@ -31,6 +31,7 @@ async function bootstrap() {
             amountIn: new BigNumber(op.amount),
             txIn: tx.id,
             txInIndex: (new BigNumber(op.paging_token)).minus(tx.paging_token).minus(1).toNumber(),
+            addressFrom: op.from,
             swap,
           } as Tx);
           await txService.enqueue(swapTx);
