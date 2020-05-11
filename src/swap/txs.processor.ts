@@ -56,7 +56,7 @@ export class TxsProcessor {
 
       let path;
       let result;
-      if (tx.swap.userInput === 'out' && tx.swap.amountIn && tx.swap.amountIn.lt(tx.amountIn)) {
+      if (tx.swap.userInput === 'out' && tx.swap.amountIn && tx.swap.amountIn.lte(tx.amountIn)) {
         path = await this.stellarService.calculateSell(tx.currencyIn, tx.currencyOut, tx.swap.amountOut.toString());
         this.logger.log(path);
         result = await this.stellarService.pathPaymentStrictReceive({
@@ -72,7 +72,7 @@ export class TxsProcessor {
 
         tx.amountOut = tx.swap.amountOut;
       } else {
-        path = await this.stellarService.calculateBuy(tx.currencyIn, tx.amountIn.toFixed(7), tx.currencyOut);
+        path = await this.stellarService.calculateBuy(tx.currencyIn, tx.amountIn.dividedBy(1.005).toFixed(7), tx.currencyOut);
         const destAmount = new BigNumber(path.destination_amount).dividedBy(1.005);
         this.logger.log(path);
         result = await this.stellarService.pathPaymentStrictSend({
