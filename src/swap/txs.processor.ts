@@ -36,8 +36,11 @@ export class TxsProcessor {
 
       let addressOut;
       let memo = null;
-      if (StrKey.isValidEd25519PublicKey(tx.swap.addressOut)) {
-        addressOut = tx.swap.addressOut;
+
+      const fed = await this.stellarService.resolveFederatedAddress(tx.swap.addressOut);
+      if (fed.account_id) {
+        addressOut = fed.account_id;
+        memo = fed.memo;
       } else {
         const response = await this.httpService.post(this.config.get('apayBaseUrl')
           + '/withdraw', {

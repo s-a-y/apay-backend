@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {MyLoggerService} from './my-logger.service';
-import { Asset, Server, Keypair, Operation, TransactionBuilder, Account, Memo, xdr } from 'stellar-sdk';
+import { Asset, Server, Keypair, Operation, TransactionBuilder, Account, Memo, xdr, StrKey, FederationServer } from 'stellar-sdk';
 import * as StellarSdk from 'stellar-sdk';
 import {ConfigService} from '@nestjs/config';
 import BigNumber from 'bignumber.js';
@@ -172,5 +172,18 @@ export class StellarService {
         memo: (memo ? (parseInt(memo, 10) == memo ? Memo.id(memo) : Memo.text(memo)) : null),
         secretKeys: [sourceKeypair.secret()],
     });
+  }
+
+  resolveFederatedAddress(addressOut: string): Promise<{ account_id?: string, memo?: string }> {
+    if (StrKey.isValidEd25519PublicKey(addressOut)) {
+      return Promise.resolve({
+        account_id: addressOut,
+      });
+    }
+    try {
+      return FederationServer.resolve(addressOut);
+    } catch (err) {
+      return Promise.resolve({});
+    }
   }
 }
