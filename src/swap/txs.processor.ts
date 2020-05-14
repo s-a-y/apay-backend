@@ -18,7 +18,7 @@ export class TxsProcessor {
     private readonly httpService: HttpService,
   ) {}
 
-  @Process()
+  @Process('__default__')
   async process(job: Job<number>, done: DoneCallback) {
     this.logger.log(job.data);
 
