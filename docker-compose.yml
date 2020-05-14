@@ -1,0 +1,45 @@
+version: '3.7'
+
+services:
+  apay-be:
+    container_name: apay-be
+    build:
+      context: .
+      target: development
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - 3000:3000
+      - 9229:9229
+    command: npm run start
+    env_file:
+      - .env
+    networks:
+      - webnet
+    depends_on:
+      - apaybepostgres
+      - apayberedis
+  apayberedis:
+    container_name: apayberedis
+    image: redis:5
+    networks:
+      - webnet
+  apaybepostgres:
+    container_name: apaybepostgres
+    image: postgres:12
+    networks:
+      - webnet
+    environment:
+      POSTGRES_PASSWORD: secret
+      POSTGRES_USER: user
+      POSTGRES_DB: apaybe
+      PG_DATA: /var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+networks:
+  webnet:
+volumes:
+  pgdata:
