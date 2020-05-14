@@ -28,13 +28,11 @@ export interface Asset {
 }
 
 export interface Rates {
-  [code: string]: number;
+  [code: string]: BigNumber;
 }
 
 export interface RatesLogData {
-  currency: string;
-  rate: number;
-  timestamp: Date;
+  [code: string]: string;
 }
 
 export interface RateHistoryData {

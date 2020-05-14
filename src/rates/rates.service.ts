@@ -8,6 +8,8 @@ import {Rates, RatesItem} from "../app.interfaces";
 import {InjectRepository} from "@nestjs/typeorm";
 import {OrderOption, SupportedCurrency} from "../app.enums";
 import {MyLoggerService} from "../my-logger.service";
+import {map} from "rxjs/operators";
+import BigNumber from "bignumber.js";
 
 @Injectable()
 export class RatesService extends AbstractService<GetRatesLogDto, RatesLog, RatesItem> {
@@ -40,23 +42,23 @@ export class RatesService extends AbstractService<GetRatesLogDto, RatesLog, Rate
     }
 
     if (input.createdAt) {
-      builder.andWhere('rates_log.createdAt = :value', { value: input.createdAt });
+      builder.andWhere('rates_log.createdAt = :createdAt', { createdAt: input.createdAt });
     }
 
     if (input.fromCreatedAt) {
-      builder.andWhere('rates_log.createdAt >= :value', { value: input.fromCreatedAt });
+      builder.andWhere('rates_log.createdAt >= :fromCreatedAt', { fromCreatedAt: input.fromCreatedAt });
     }
 
     if (input.toCreatedAt) {
-      builder.andWhere('rates_log.createdAt <= :value', { value: input.toCreatedAt });
+      builder.andWhere('rates_log.createdAt <= :toCreatedAt', { toCreatedAt: input.toCreatedAt });
     }
 
     if (input.at) {
-      builder.andWhere('rates_log.at = :value', { value: input.at });
+      builder.andWhere('rates_log.at = :at', { at: input.at });
     }
 
     if (input.fromAt) {
-      builder.andWhere('rates_log.at >= :value', { value: input.fromAt });
+      builder.andWhere('rates_log.at >= :fromAt', { fromAt: input.fromAt });
     }
 
     if (input.toAt) {
@@ -72,40 +74,44 @@ export class RatesService extends AbstractService<GetRatesLogDto, RatesLog, Rate
 
   async mapPagedItems(log: RatesLog, input: GetRatesLogDto) {
     const rates: Rates = {};
-    const baseCurrency = input.baseCurrency || SupportedCurrency.XDR;
-    const baseCurrencyRate = log.data.find(o => o.currency === baseCurrency).rate;
-    log.data.forEach((rawRates)=> {
-      rates[rawRates.currency] = rawRates.rate / baseCurrencyRate;
+    Object.values(SupportedCurrency).forEach((key)=> {
+      if (log.data[key]) {
+        rates[key] = new BigNumber(log.data[key]);
+      }
     });
     return Promise.resolve({
       id: log.id,
       rates,
       createdAt: log.createdAt,
-      at: log.data[0].timestamp
+      at: log.at
     } as RatesItem);
   }
 
   async fetchRates() {
-    const rates = await this.fetchFromNomics();
-    return await this.insertRatesLog(rates);
-  }
-
-  private async fetchFromNomics() {
-    const response = await this.http.get(
-      'https://api.nomics.com/v1/exchange-rates',
-      {
-        params: {key: this.configService.get('nomicsApiKey')}
-      },
-    ).toPromise();
-
-    return response.data;
-  }
-
-  private async insertRatesLog(rates) {
+    const rates = await this.fetchFromStellarTicker();
+    const lastRatesEntity = await this.entitiesRepository.createQueryBuilder().orderBy('at', OrderOption.DESC).getOne();
+    const lastRates = lastRatesEntity ? lastRatesEntity.data : {};
     const log = new RatesLog();
-    log.at = new Date(rates[0].timestamp);
-    log.data = rates;
+    log.at = rates.at;
+    // The idea is that rates for some currencies do not always available while we requests stellar ticker
+    // so we should take the rates values from previous responses
+    log.data = {...lastRates, ...rates.data};
     return await this.saveRatesLog(log);
+  }
+
+  async fetchFromStellarTicker() {
+    return await this.http.get('https://ticker.stellar.org/markets.json').pipe(
+      map((response) => {
+        return {
+          at: response.data.generated_at_rfc3339,
+          data: response.data.pairs
+            .filter((o) => o.name.search('XLM_') !== -1)
+            // Convert received value to rate with base=XLM
+            .map((o) => ({[o.name.substr(4)]: new BigNumber(1).div(o.price)}))
+            .reduce((acc, o) => ({...acc, ...o}), {})
+        };
+      })
+    ).toPromise();
   }
 
   saveRatesLog(log: RatesLog, repository: Repository<RatesLog> = null): Promise<RatesLog> {

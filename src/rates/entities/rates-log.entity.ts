@@ -11,7 +11,7 @@ export class RatesLog {
   cursor: number;
 
   @Column({ type: 'json', default: []})
-  data: RatesLogData[];
+  data: RatesLogData;
 
   @Column({type: "timestamp"})
   at: Date;
