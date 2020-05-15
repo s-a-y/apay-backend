@@ -175,15 +175,9 @@ export class StellarService {
   }
 
   resolveFederatedAddress(addressOut: string): Promise<{ account_id?: string, memo?: string }> {
-    if (StrKey.isValidEd25519PublicKey(addressOut)) {
-      return Promise.resolve({
-        account_id: addressOut,
+    return FederationServer.resolve(addressOut)
+      .catch((err) => {
+        return Promise.resolve({});
       });
-    }
-    try {
-      return FederationServer.resolve(addressOut);
-    } catch (err) {
-      return Promise.resolve({});
-    }
   }
 }
