@@ -1,10 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import {MyLoggerService} from './my-logger.service';
-import { Asset, Server, Keypair, Operation, TransactionBuilder, Account, Memo, xdr, StrKey, FederationServer } from 'stellar-sdk';
+import { Asset, Server, Keypair, Operation, TransactionBuilder, Account, Memo, xdr, StrKey, FederationServer, AssetType } from 'stellar-sdk';
 import * as StellarSdk from 'stellar-sdk';
 import {ConfigService} from '@nestjs/config';
 import BigNumber from 'bignumber.js';
 import {reduce, filter} from 'lodash';
+
+export interface AssetInterface {
+  asset_type: AssetType;
+  asset_code?: string;
+  asset_issuer?: string;
+}
 
 @Injectable()
 export class StellarService {
@@ -146,7 +152,7 @@ export class StellarService {
         destAsset: new Asset(currencyOut, currencyOutIssuer),
         destAmount: amountOut,
         source: sourceKeypair.publicKey(),
-        path,
+        path: path.map(this.assetFromObject),
       })], {
         sequence,
         // tslint:disable-next-line:triple-equals
@@ -174,6 +180,10 @@ export class StellarService {
         memo: (memo ? (parseInt(memo, 10) == memo ? Memo.id(memo) : Memo.text(memo)) : null),
         secretKeys: [sourceKeypair.secret()],
     });
+  }
+
+  assetFromObject(assetObj: AssetInterface): Asset {
+    return assetObj.asset_type === 'native' ? Asset.native() : new Asset(assetObj.asset_code, assetObj.asset_issuer);
   }
 
   resolveFederatedAddress(addressOut: string): Promise<{ account_id?: string, memo?: string }> {
