@@ -65,6 +65,7 @@ export class TxsProcessor {
           amountIn: tx.amountIn.toFixed(7),
           amountOut: path.destination_amount,
           addressOut,
+          path: path.path,
           memo,
           channel: tx.channel,
           sequence: tx.sequence,

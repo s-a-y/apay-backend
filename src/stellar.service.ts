@@ -133,7 +133,7 @@ export class StellarService {
     }
   }
 
-  pathPaymentStrictReceive({ currencyIn, currencyOut, amountIn, amountOut, addressOut, memo, channel, sequence }) {
+  pathPaymentStrictReceive({ currencyIn, currencyOut, amountIn, amountOut, addressOut, path, memo, channel, sequence }) {
     const currencyInIssuer = this.configService.get('stellar').knownIssuers[currencyIn];
     const currencyOutIssuer = this.configService.get('stellar').knownIssuers[currencyOut];
     const sourceKeypair = StellarSdk.Keypair.fromSecret(this.configService.get('swapAccountSecret'));
@@ -146,6 +146,7 @@ export class StellarService {
         destAsset: new Asset(currencyOut, currencyOutIssuer),
         destAmount: amountOut,
         source: sourceKeypair.publicKey(),
+        path,
       })], {
         sequence,
         // tslint:disable-next-line:triple-equals
