@@ -145,6 +145,7 @@ export class StellarService {
         destination: addressOut,
         destAsset: new Asset(currencyOut, currencyOutIssuer),
         destAmount: amountOut,
+        source: sourceKeypair.publicKey(),
       })], {
         sequence,
         // tslint:disable-next-line:triple-equals
