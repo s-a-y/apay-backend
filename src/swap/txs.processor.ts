@@ -56,7 +56,7 @@ export class TxsProcessor {
 
       let path;
       let result;
-      if (tx.swap.userInput === 'out' && tx.swap.amountIn && tx.swap.amountIn.lte(tx.amountIn)) {
+      if (tx.swap.userInput === 'out' && tx.swap.amountIn && tx.swap.amountIn.minus(tx.amountIn).lte(0.0001)) {
         path = await this.stellarService.calculateSell(tx.currencyIn, tx.currencyOut, tx.swap.amountOut.toString());
         this.logger.log(path);
         result = await this.stellarService.pathPaymentStrictReceive({
