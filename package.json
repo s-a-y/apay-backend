@@ -46,7 +46,7 @@
     "fluent-logger": "^3.4.1",
     "lodash": "latest",
     "minimist": "^1.2.2",
-    "moment": "^2.24.0",
+    "moment": "^2.29.4",
     "pg": "^7.17.1",
     "pg-query-stream": "^3.0.2",
     "reflect-metadata": "^0.1.13",
